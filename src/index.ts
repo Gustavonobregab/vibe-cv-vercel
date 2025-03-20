@@ -1,5 +1,5 @@
 import express from 'express';
-import { errorHandler } from './middlewares/error-handler';
+import { errorHandler } from './shared/middlewares/error-handler';
 import {
   NotFoundException,
   InvalidInputException,
@@ -12,7 +12,7 @@ import {
   RateLimitExceededException,
   DatabaseErrorException,
   MaintenanceModeException
-} from './errors/http-exception';
+} from './shared/errors/http-exception';
 
 console.log('Starting server initialization...');
 
