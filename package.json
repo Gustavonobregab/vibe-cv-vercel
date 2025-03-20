@@ -1,0 +1,23 @@
+{
+  "name": "fast-cv",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "ts-node src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.10",
+    "axios": "^1.6.8",
+    "express": "^4.21.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
+  }
+}
