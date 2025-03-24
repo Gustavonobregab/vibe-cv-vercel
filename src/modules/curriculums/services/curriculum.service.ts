@@ -1,8 +1,7 @@
 import curriculumRepository from '../repositories/curriculum.repository'
-import ownershipService from '../../ownerships/services/ownership.service'
 import { NotFoundException, InvalidInputException } from '../../../shared/errors/http-exception'
 
-const create = async (data: { title: string; content: string; rawContent: string; userId: number }) => {
+const create = async (data: { title: string; content: string; rawContent: string; userId: string }) => {
   if (!data.title || !data.content || !data.rawContent || !data.userId) {
     throw new InvalidInputException('Missing required fields')
   }
@@ -11,21 +10,17 @@ const create = async (data: { title: string; content: string; rawContent: string
     title: data.title,
     content: data.content,
     rawContent: data.rawContent,
+    userId: data.userId,
   })
 
   if (!curriculum) {
     throw new InvalidInputException('Failed to create curriculum')
   }
 
-  await ownershipService.create({
-    userId: data.userId,
-    curriculumId: curriculum.id,
-  })
-
   return curriculum
 }
 
-const getById = async (id: number) => {
+const getById = async (id: string) => {
   const curriculum = await curriculumRepository.getCurriculumById(id)
   if (!curriculum) {
     throw new NotFoundException('Curriculum not found')
@@ -34,7 +29,7 @@ const getById = async (id: number) => {
   return curriculum
 }
 
-const update = async (id: number, data: { title?: string; content?: string; rawContent?: string; status?: 'draft' | 'published' | 'archived' }) => {
+const update = async (id: string, data: { title?: string; content?: string; rawContent?: string; status?: 'draft' | 'published' | 'archived' }) => {
   const curriculum = await curriculumRepository.updateCurriculum(id, data)
   if (!curriculum) {
     throw new NotFoundException('Curriculum not found')
@@ -47,6 +42,15 @@ const getByStatus = async (status: 'draft' | 'published' | 'archived') => {
   const curriculums = await curriculumRepository.getCurriculumsByStatus(status)
   if (!curriculums.length) {
     throw new NotFoundException('No curriculums found with this status')
+  }
+
+  return curriculums
+}
+
+const getByUserId = async (userId: string) => {
+  const curriculums = await curriculumRepository.getCurriculumsByUserId(userId)
+  if (!curriculums.length) {
+    throw new NotFoundException('No curriculums found for this user')
   }
 
   return curriculums
@@ -70,5 +74,6 @@ export default {
   getById,
   update,
   getByStatus,
+  getByUserId,
   getPaginated,
 } 

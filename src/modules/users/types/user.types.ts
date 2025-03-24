@@ -16,3 +16,4 @@ export interface CreateUserDto {
 
 export interface UpdateUserDto {
   name?: string
+}

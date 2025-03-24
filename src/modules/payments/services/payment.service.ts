@@ -27,7 +27,7 @@ const create = async (data: CreatePaymentDto) => {
   return payment
 }
 
-const getById = async (id: number) => {
+const getById = async (id: string) => {
   const payment = await paymentRepository.getById(id)
   if (!payment) {
     throw new NotFoundException('Payment not found')
@@ -36,7 +36,7 @@ const getById = async (id: number) => {
   return payment
 }
 
-const update = async (id: number, { status, statusReason }: UpdatePaymentDto) => {
+const update = async (id: string, { status, statusReason }: UpdatePaymentDto) => {
   // Validate input data
   const validatedData = updatePaymentSchema.parse({ status, statusReason })
 
@@ -52,7 +52,7 @@ const update = async (id: number, { status, statusReason }: UpdatePaymentDto) =>
   return payment
 }
 
-const getByUserId = async (userId: number) => {
+const getByUserId = async (userId: string) => {
   const payments = await paymentRepository.getByUserId(userId)
   if (!payments.length) {
     throw new NotFoundException('No payments found for user')

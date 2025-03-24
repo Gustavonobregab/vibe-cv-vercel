@@ -2,12 +2,12 @@ import { db } from '../../../shared/database/config'
 import { curriculums } from '../entities/curriculum.entity'
 import { eq, desc, sql } from 'drizzle-orm'
 
-const createCurriculum = async (data: { title: string; content: string; rawContent: string }) => {
+const createCurriculum = async (data: { title: string; content: string; rawContent: string; userId: string }) => {
   const [curriculum] = await db.insert(curriculums).values(data).returning()
   return curriculum
 }
 
-const getCurriculumById = async (id: number) => {
+const getCurriculumById = async (id: string) => {
   const [curriculum] = await db
     .select()
     .from(curriculums)
@@ -16,7 +16,7 @@ const getCurriculumById = async (id: number) => {
   return curriculum
 }
 
-const updateCurriculum = async (id: number, data: { title?: string; content?: string; rawContent?: string; status?: 'draft' | 'published' | 'archived' }) => {
+const updateCurriculum = async (id: string, data: { title?: string; content?: string; rawContent?: string; status?: 'draft' | 'published' | 'archived' }) => {
   const [curriculum] = await db
     .update(curriculums)
     .set(data)
@@ -31,6 +31,14 @@ const getCurriculumsByStatus = async (status: 'draft' | 'published' | 'archived'
     .select()
     .from(curriculums)
     .where(eq(curriculums.status, status))
+    .orderBy(desc(curriculums.createdAt))
+}
+
+const getCurriculumsByUserId = async (userId: string) => {
+  return await db
+    .select()
+    .from(curriculums)
+    .where(eq(curriculums.userId, userId))
     .orderBy(desc(curriculums.createdAt))
 }
 
@@ -61,5 +69,6 @@ export default {
   getCurriculumById,
   updateCurriculum,
   getCurriculumsByStatus,
+  getCurriculumsByUserId,
   getCurriculumsPaginated,
 } 

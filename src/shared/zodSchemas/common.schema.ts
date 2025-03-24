@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-// Common ID schema
-export const idSchema = z.number().int().positive()
+// Common ID schema (UUID)
+export const idSchema = z.string().uuid()
 
 // Common pagination schema
 export const paginationSchema = z.object({

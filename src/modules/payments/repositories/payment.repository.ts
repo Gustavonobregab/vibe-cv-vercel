@@ -1,56 +1,89 @@
 import { db } from '../../../shared/database/config'
-import { payments } from '../entities/payment.entity'
+import { payables } from '../entities/payable.entity'
+import { curriculums } from '../../curriculums/entities/curriculum.entity'
 import { eq, desc, sql } from 'drizzle-orm'
 
-const create = async (data: { userId: number; amount: number; currency: string; paymentMethod: string; transactionId: string }) => {
-  const [payment] = await db.insert(payments).values(data).returning()
+const create = async (data: {
+  userId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: 'pix' | 'credit';
+  transactionId: string;
+  curriculumId: string;
+}) => {
+  // Convert the numeric amount to a string for the decimal column
+  const payableData = {
+    curriculumId: data.curriculumId,
+    amount: data.amount.toString(),
+    currency: data.currency,
+    paymentMethod: data.paymentMethod,
+    transactionId: data.transactionId,
+    status: 'pending' as const,
+  };
+
+  const [payment] = await db.insert(payables).values(payableData).returning()
   return payment
 }
 
-const getById = async (id: number) => {
+const getById = async (id: string) => {
   const [payment] = await db
     .select()
-    .from(payments)
-    .where(eq(payments.id, id))
+    .from(payables)
+    .where(eq(payables.id, id))
 
   return payment
 }
 
-const update = async (id: number, data: { status: string; statusReason?: string }) => {
+const update = async (id: string, data: {
+  status: 'pending' | 'paid' | 'cancelled' | 'failed';
+  statusReason?: string
+}) => {
   const [payment] = await db
-    .update(payments)
+    .update(payables)
     .set(data)
-    .where(eq(payments.id, id))
+    .where(eq(payables.id, id))
     .returning()
 
   return payment
 }
 
-const getByUserId = async (userId: number) => {
+const getByUserId = async (userId: string) => {
+  // Join with curriculums to get the userId
   return await db
     .select()
-    .from(payments)
-    .where(eq(payments.userId, userId))
-    .orderBy(desc(payments.createdAt))
+    .from(payables)
+    .innerJoin(curriculums, eq(payables.curriculumId, curriculums.id))
+    .where(eq(curriculums.userId, userId))
+    .orderBy(desc(payables.createdAt))
 }
 
-const getByStatus = async (status: string) => {
+const getByStatus = async (status: 'pending' | 'paid' | 'cancelled' | 'failed') => {
   return await db
     .select()
-    .from(payments)
-    .where(eq(payments.status, status))
-    .orderBy(desc(payments.createdAt))
+    .from(payables)
+    .where(eq(payables.status, status))
+    .orderBy(desc(payables.createdAt))
 }
 
-const getPaginated = async (page: number = 1, limit: number = 10) => {
+const getByTransactionId = async (transactionId: string) => {
+  const [payment] = await db
+    .select()
+    .from(payables)
+    .where(eq(payables.transactionId, transactionId))
+
+  return payment
+}
+
+const getPaginated = async (params: { page: number; limit: number }) => {
+  const { page = 1, limit = 10 } = params
   const offset = (page - 1) * limit
 
   const [total, items] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(payments),
+    db.select({ count: sql<number>`count(*)` }).from(payables),
     db
       .select()
-      .from(payments)
-      .orderBy(desc(payments.createdAt))
+      .from(payables)
+      .orderBy(desc(payables.createdAt))
       .limit(limit)
       .offset(offset),
   ])
@@ -70,5 +103,6 @@ export default {
   update,
   getByUserId,
   getByStatus,
+  getByTransactionId,
   getPaginated,
 } 

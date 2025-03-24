@@ -7,7 +7,7 @@ const createUser = async (data: { googleId: string; email: string; name: string;
   return user
 }
 
-const getUserById = async (id: number) => {
+const getUserById = async (id: string) => {
   const [user] = await db
     .select()
     .from(users)
@@ -34,7 +34,7 @@ const getUserByEmail = async (email: string) => {
   return user
 }
 
-const updateUser = async (id: number, data: { name?: string; picture?: string; isActive?: boolean }) => {
+const updateUser = async (id: string, data: { name?: string; picture?: string; isActive?: boolean }) => {
   const [user] = await db
     .update(users)
     .set(data)

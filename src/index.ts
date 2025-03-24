@@ -83,7 +83,10 @@ app.get('/maintenance', () => {
 
 // Error handling middleware - must be registered last
 console.log('Setting up error handler...');
-app.use(errorHandler);
+// Error handling middleware must have exactly 4 parameters for Express to recognize it
+app.use(function (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) {
+  errorHandler(err, req, res, next);
+});
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {

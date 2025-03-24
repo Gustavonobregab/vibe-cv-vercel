@@ -15,7 +15,7 @@ const createUser = async (data: { googleId: string; email: string; name: string;
   return user
 }
 
-const getUserById = async (id: number) => {
+const getUserById = async (id: string) => {
   const user = await userRepository.getUserById(id)
   if (!user) {
     throw new NotFoundException('User not found')
@@ -42,7 +42,7 @@ const getUserByEmail = async (email: string) => {
   return user
 }
 
-const updateUser = async (id: number, data: { name?: string; picture?: string; isActive?: boolean }) => {
+const updateUser = async (id: string, data: { name?: string; picture?: string; isActive?: boolean }) => {
   const user = await userRepository.updateUser(id, data)
   if (!user) {
     throw new NotFoundException('User not found')

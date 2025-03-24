@@ -2,14 +2,15 @@ import { z } from 'zod'
 import { idSchema, dateFieldsSchema, paginatedResponseSchema, moneySchema } from '../../../shared/zodSchemas/common.schema'
 
 // Payment status enum
-export const paymentStatusEnum = z.enum(['pending', 'processing', 'completed', 'failed', 'refunded'])
+export const paymentStatusEnum = z.enum(['pending', 'paid', 'cancelled', 'failed'])
 
 // Payment method enum
-export const paymentMethodEnum = z.enum(['credit_card', 'debit_card', 'bank_transfer', 'paypal'])
+export const paymentMethodEnum = z.enum(['pix', 'credit'])
 
 // Create payment request schema
 export const createPaymentSchema = z.object({
   userId: idSchema,
+  curriculumId: idSchema,
   ...moneySchema.shape,
   paymentMethod: paymentMethodEnum,
   transactionId: z.string().uuid(),
@@ -39,7 +40,7 @@ export const getPaymentsByStatusSchema = z.object({
 // Response schemas
 export const paymentResponseSchema = z.object({
   id: idSchema,
-  userId: idSchema,
+  curriculumId: idSchema,
   ...moneySchema.shape,
   paymentMethod: paymentMethodEnum,
   transactionId: z.string(),
