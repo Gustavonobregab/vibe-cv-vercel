@@ -1,24 +1,15 @@
 import { db } from '../../../shared/database/config'
 import { curriculums, curriculumStatusEnum } from '../entities/curriculum.entity'
 import { eq, desc, sql } from 'drizzle-orm'
-import type { Curriculum } from '../types/curriculum.types'
+import type { Curriculum, CreateCurriculumDto, UpdateCurriculumDto } from '../types/curriculum.types'
+import type { PaginationParams } from '../../../shared/types/common.types'
 
-const createCurriculum = async ({
-  title,
-  content,
-  rawContent,
-  userId
-}: {
-  title: string
-  content: string
-  rawContent: string
-  userId: string
-}): Promise<Curriculum> => {
-  const [curriculum] = await db.insert(curriculums).values({ title, content, rawContent, userId }).returning()
+const create = async (data: CreateCurriculumDto): Promise<Curriculum> => {
+  const [curriculum] = await db.insert(curriculums).values(data).returning()
   return curriculum
 }
 
-const getCurriculumById = async (id: string): Promise<Curriculum | undefined> => {
+const getById = async (id: string): Promise<Curriculum | undefined> => {
   const [curriculum] = await db
     .select()
     .from(curriculums)
@@ -27,30 +18,17 @@ const getCurriculumById = async (id: string): Promise<Curriculum | undefined> =>
   return curriculum
 }
 
-const updateCurriculum = async (
-  id: string,
-  {
-    title,
-    content,
-    rawContent,
-    status
-  }: {
-    title?: string
-    content?: string
-    rawContent?: string
-    status?: typeof curriculumStatusEnum.enumValues[number]
-  }
-): Promise<Curriculum> => {
+const update = async (id: string, data: UpdateCurriculumDto): Promise<Curriculum> => {
   const [curriculum] = await db
     .update(curriculums)
-    .set({ title, content, rawContent, status })
+    .set(data)
     .where(eq(curriculums.id, id))
     .returning()
 
   return curriculum
 }
 
-const getCurriculumsByStatus = async (status: typeof curriculumStatusEnum.enumValues[number]): Promise<Curriculum[]> => {
+const getByStatus = async (status: typeof curriculumStatusEnum.enumValues[number]): Promise<Curriculum[]> => {
   return await db
     .select()
     .from(curriculums)
@@ -58,7 +36,7 @@ const getCurriculumsByStatus = async (status: typeof curriculumStatusEnum.enumVa
     .orderBy(desc(curriculums.createdAt))
 }
 
-const getCurriculumsByUserId = async (userId: string): Promise<Curriculum[]> => {
+const getByUserId = async (userId: string): Promise<Curriculum[]> => {
   return await db
     .select()
     .from(curriculums)
@@ -66,10 +44,7 @@ const getCurriculumsByUserId = async (userId: string): Promise<Curriculum[]> => 
     .orderBy(desc(curriculums.createdAt))
 }
 
-const getCurriculumsPaginated = async (
-  page: number = 1,
-  limit: number = 10
-): Promise<{
+const getPaginated = async ({ page = 1, limit = 10 }: PaginationParams): Promise<{
   items: Curriculum[]
   total: number
   page: number
@@ -98,10 +73,10 @@ const getCurriculumsPaginated = async (
 }
 
 export default {
-  createCurriculum,
-  getCurriculumById,
-  updateCurriculum,
-  getCurriculumsByStatus,
-  getCurriculumsByUserId,
-  getCurriculumsPaginated,
+  create,
+  getById,
+  update,
+  getByStatus,
+  getByUserId,
+  getPaginated,
 } 

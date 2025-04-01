@@ -25,6 +25,11 @@ export const getCurriculumByIdSchema = z.object({
   id: idSchema,
 })
 
+// Get curriculums by user ID request schema
+export const getCurriculumsByUserIdSchema = z.object({
+  userId: idSchema,
+})
+
 // Get curriculums by status request schema
 export const getCurriculumsByStatusSchema = z.object({
   status: curriculumStatusEnum,
@@ -33,6 +38,7 @@ export const getCurriculumsByStatusSchema = z.object({
 // Response schemas
 export const curriculumResponseSchema = z.object({
   id: idSchema,
+  userId: idSchema,
   title: z.string(),
   content: z.string(),
   rawContent: z.string(),

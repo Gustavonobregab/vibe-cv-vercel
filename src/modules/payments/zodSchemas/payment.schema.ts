@@ -1,24 +1,21 @@
 import { z } from 'zod'
-import { idSchema, dateFieldsSchema, paginatedResponseSchema, moneySchema } from '../../../shared/zodSchemas/common.schema'
+import { idSchema, dateFieldsSchema, paginatedResponseSchema } from '../../../shared/zodSchemas/common.schema'
 
 // Payment status enum
-export const paymentStatusEnum = z.enum(['pending', 'processing', 'completed', 'failed', 'refunded'])
-
-// Payment method enum
-export const paymentMethodEnum = z.enum(['credit_card', 'debit_card', 'bank_transfer', 'paypal'])
+export const paymentStatusEnum = z.enum(['pending', 'processing', 'paid', 'failed', 'refunded'])
 
 // Create payment request schema
 export const createPaymentSchema = z.object({
-  userId: idSchema,
-  ...moneySchema.shape,
-  paymentMethod: paymentMethodEnum,
-  transactionId: z.string().uuid(),
+  curriculumId: idSchema,
+  amount: z.number().positive(),
+  paymentMethod: z.string().min(1),
+  paymentDetails: z.string().optional(),
 })
 
 // Update payment request schema
 export const updatePaymentSchema = z.object({
-  status: paymentStatusEnum,
-  statusReason: z.string().optional(),
+  status: paymentStatusEnum.optional(),
+  paymentDetails: z.string().optional(),
 })
 
 // Get payment by ID request schema
@@ -26,24 +23,19 @@ export const getPaymentByIdSchema = z.object({
   id: idSchema,
 })
 
-// Get payments by user request schema
-export const getPaymentsByUserSchema = z.object({
-  userId: idSchema,
-})
-
-// Get payments by status request schema
-export const getPaymentsByStatusSchema = z.object({
-  status: paymentStatusEnum,
+// Get payments by curriculum ID request schema
+export const getPaymentsByCurriculumIdSchema = z.object({
+  curriculumId: idSchema,
 })
 
 // Response schemas
 export const paymentResponseSchema = z.object({
   id: idSchema,
-  ...moneySchema.shape,
-  paymentMethod: paymentMethodEnum,
-  transactionId: z.string(),
+  curriculumId: idSchema,
+  amount: z.number(),
   status: paymentStatusEnum,
-  statusReason: z.string().nullable(),
+  paymentMethod: z.string(),
+  paymentDetails: z.string().nullable(),
 }).merge(dateFieldsSchema)
 
 export const paymentListResponseSchema = z.array(paymentResponseSchema)

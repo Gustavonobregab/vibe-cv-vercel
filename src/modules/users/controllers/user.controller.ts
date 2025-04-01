@@ -6,10 +6,12 @@ import {
   updateUserSchema,
   getUserByIdSchema,
   getUserByGoogleIdSchema,
-  getUserByEmailSchema
+  getUserByEmailSchema,
+  completeProfileSchema
 } from '../zodSchemas/user.schema'
 import { paginationSchema } from '../../../shared/zodSchemas/common.schema'
 import { NotFoundException } from '../../../shared/errors/http-exception'
+import { put } from '@vercel/blob'
 
 const createUser = async (req: Request, res: Response) => {
   const validatedData = validateBody(req).with(createUserSchema)
@@ -54,13 +56,40 @@ const updateUser = async (req: Request, res: Response) => {
   res.json(user)
 }
 
+const completeProfile = async (req: Request, res: Response) => {
+  const { id } = validateParams(req).with(getUserByIdSchema)
+  const validatedData = validateBody(req).with(completeProfileSchema)
+  const user = await userService.completeProfile(id, validatedData)
+  res.json(user)
+}
+
 const getUsersPaginated = async (req: Request, res: Response) => {
-  const { page = 1, limit = 10 } = validateQuery(req).with(paginationSchema)
-  const users = await userService.getPaginated({
-    page: Number(page),
-    limit: Number(limit)
-  })
+  const validatedQuery = validateQuery(req).with(paginationSchema)
+  const users = await userService.getPaginated(validatedQuery)
   res.json(users)
+}
+
+const uploadCV = async (req: Request, res: Response) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' })
+  }
+
+  const { id } = validateParams(req).with(getUserByIdSchema)
+  const user = await userService.getById(id)
+
+  if (!user) {
+    throw new NotFoundException('User not found')
+  }
+
+  // Upload file to Vercel Blob
+  const { url } = await put(`users/${id}/cv.pdf`, req.file.buffer, {
+    access: 'public',
+    contentType: req.file.mimetype,
+  })
+
+  // Update user with CV URL
+  const updatedUser = await userService.update(id, { cvFileUrl: url })
+  res.json(updatedUser)
 }
 
 export default {
@@ -69,5 +98,7 @@ export default {
   getUserByGoogleId,
   getUserByEmail,
   updateUser,
-  getUsersPaginated
+  completeProfile,
+  getUsersPaginated,
+  uploadCV
 } 

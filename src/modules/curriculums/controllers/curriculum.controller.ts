@@ -5,7 +5,7 @@ import {
   createCurriculumSchema,
   updateCurriculumSchema,
   getCurriculumByIdSchema,
-  getCurriculumsByStatusSchema
+  getCurriculumsByUserIdSchema,
 } from '../zodSchemas/curriculum.schema'
 import { paginationSchema } from '../../../shared/zodSchemas/common.schema'
 import { NotFoundException } from '../../../shared/errors/http-exception'
@@ -36,7 +36,7 @@ const updateCurriculum = async (req: Request, res: Response) => {
 }
 
 const getCurriculumsByUserId = async (req: Request, res: Response) => {
-  const { userId } = validateParams(req).with(getCurriculumByIdSchema)
+  const { userId } = validateParams(req).with(getCurriculumsByUserIdSchema)
   const curriculums = await curriculumService.getByUserId(userId)
   res.json(curriculums)
 }

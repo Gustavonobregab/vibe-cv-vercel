@@ -1,86 +1,52 @@
-import { db } from '../../../shared/database/config'
+import { db } from '../../../shared/database'
 import { users } from '../entities/user.entity'
-import { eq } from 'drizzle-orm'
-import type { User } from '../types/user.types'
+import { eq, desc } from 'drizzle-orm'
+import type { CreateGoogleUserDto, UpdateUserDto, UserId } from '../types/user.types'
+import type { PaginationParams } from '../../../shared/types/common.types'
 
-const createUser = async ({
-  googleId,
-  email,
-  name,
-  picture
-}: {
-  googleId: string
-  email: string
-  name: string
-  picture?: string
-}): Promise<User> => {
-  const [user] = await db.insert(users).values({
-    googleId,
-    email,
-    name,
-    picture,
-    isActive: true
-  }).returning()
-  return user
+const create = async (data: CreateGoogleUserDto) => {
+  return await db.insert(users).values(data).returning()
 }
 
-const getUserById = async (id: string): Promise<User | undefined> => {
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, id))
-
-  return user
+const getById = async (id: UserId) => {
+  return await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.id, id)
+  })
 }
 
-const getUserByGoogleId = async (googleId: string): Promise<User | undefined> => {
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.googleId, googleId))
-
-  return user
+const getByGoogleId = async (googleId: string) => {
+  return await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.googleId, googleId)
+  })
 }
 
-const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-
-  return user
+const getByEmail = async (email: string) => {
+  return await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.email, email)
+  })
 }
 
-const updateUser = async (
-  id: string,
-  {
-    name,
-    picture,
-    isActive
-  }: {
-    name?: string
-    picture?: string
-    isActive?: boolean
-  }
-): Promise<User> => {
-  const [user] = await db
-    .update(users)
-    .set({
-      name,
-      picture,
-      isActive,
-      updatedAt: new Date()
-    })
+const update = async (id: UserId, data: UpdateUserDto) => {
+  return await db.update(users)
+    .set(data)
     .where(eq(users.id, id))
     .returning()
+}
 
-  return user
+const getPaginated = async ({ page, limit }: PaginationParams) => {
+  const offset = (page - 1) * limit
+  return await db.query.users.findMany({
+    limit,
+    offset,
+    orderBy: (users, { desc }) => [desc(users.createdAt)]
+  })
 }
 
 export default {
-  createUser,
-  getUserById,
-  getUserByGoogleId,
-  getUserByEmail,
-  updateUser,
+  create,
+  getById,
+  getByGoogleId,
+  getByEmail,
+  update,
+  getPaginated
 } 

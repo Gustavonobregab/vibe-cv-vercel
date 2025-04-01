@@ -1,35 +1,18 @@
 import { db } from '../../../shared/database/config'
 import { payments } from '../entities/payment.entity'
 import { eq, desc, sql } from 'drizzle-orm'
-import type { Payment, PaymentId, PaymentStatus } from '../types/payment.types'
-import type { UserId } from '../../users/types/user.types'
+import type { Payment, CreatePaymentDto, UpdatePaymentDto } from '../types/payment.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async ({
-  userId,
-  amount,
-  currency,
-  paymentMethod,
-  transactionId
-}: {
-  userId: UserId
-  amount: number
-  currency: string
-  paymentMethod: string
-  transactionId: string
-}): Promise<Payment> => {
+const create = async (data: CreatePaymentDto): Promise<Payment> => {
   const [payment] = await db.insert(payments).values({
-    userId,
-    amount: amount.toString(),
-    currency,
-    paymentMethod,
-    transactionId,
-    status: 'pending' as const
+    ...data,
+    amount: data.amount.toString()
   }).returning()
   return payment
 }
 
-const getById = async (id: PaymentId): Promise<Payment | undefined> => {
+const getById = async (id: string): Promise<Payment | undefined> => {
   const [payment] = await db
     .select()
     .from(payments)
@@ -38,61 +21,25 @@ const getById = async (id: PaymentId): Promise<Payment | undefined> => {
   return payment
 }
 
-const getByTransactionId = async (transactionId: string): Promise<Payment | undefined> => {
-  const [payment] = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.transactionId, transactionId))
-
-  return payment
-}
-
-const update = async (
-  id: PaymentId,
-  {
-    status,
-    statusReason
-  }: {
-    status: PaymentStatus
-    statusReason?: string
-  }
-): Promise<Payment> => {
+const update = async (id: string, data: UpdatePaymentDto): Promise<Payment> => {
   const [payment] = await db
     .update(payments)
-    .set({
-      status: status as const,
-      statusReason,
-      updatedAt: new Date()
-    })
+    .set(data)
     .where(eq(payments.id, id))
     .returning()
 
   return payment
 }
 
-const getByUserId = async (userId: UserId): Promise<Payment[]> => {
+const getByCurriculumId = async (curriculumId: string): Promise<Payment[]> => {
   return await db
     .select()
     .from(payments)
-    .where(eq(payments.userId, userId))
+    .where(eq(payments.curriculumId, curriculumId))
     .orderBy(desc(payments.createdAt))
 }
 
-const getByStatus = async (status: PaymentStatus): Promise<Payment[]> => {
-  return await db
-    .select()
-    .from(payments)
-    .where(eq(payments.status, status as const))
-    .orderBy(desc(payments.createdAt))
-}
-
-const getPaginated = async ({
-  page = 1,
-  limit = 10
-}: {
-  page?: number
-  limit?: number
-}): Promise<{
+const getPaginated = async ({ page = 1, limit = 10 }: PaginationParams): Promise<{
   items: Payment[]
   total: number
   page: number
@@ -123,9 +70,7 @@ const getPaginated = async ({
 export default {
   create,
   getById,
-  getByTransactionId,
   update,
-  getByUserId,
-  getByStatus,
+  getByCurriculumId,
   getPaginated,
 } 

@@ -13,13 +13,24 @@ export const createUserSchema = z.object({
   isActive: z.boolean().default(true),
 })
 
+// Profile completion schema
+export const completeProfileSchema = z.object({
+  phone: z.string().min(10).max(15).optional(),
+  bio: z.string().max(500).optional(),
+  location: z.string().max(100).optional(),
+  website: z.string().url().optional(),
+  company: z.string().max(100).optional(),
+  jobTitle: z.string().max(100).optional(),
+  cvFileUrl: z.string().url().optional(),
+})
+
 // Update user request schema
 export const updateUserSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   picture: z.string().url().optional(),
   isActive: z.boolean().optional(),
   status: userStatusEnum.optional(),
-})
+}).merge(completeProfileSchema)
 
 // Get user by ID request schema
 export const getUserByIdSchema = z.object({
@@ -45,6 +56,13 @@ export const userResponseSchema = z.object({
   picture: z.string().nullable(),
   isActive: z.boolean(),
   status: userStatusEnum,
+  phone: z.string().nullable(),
+  bio: z.string().nullable(),
+  location: z.string().nullable(),
+  website: z.string().nullable(),
+  company: z.string().nullable(),
+  jobTitle: z.string().nullable(),
+  cvFileUrl: z.string().nullable(),
 }).merge(dateFieldsSchema)
 
 export const userListResponseSchema = z.array(userResponseSchema) 

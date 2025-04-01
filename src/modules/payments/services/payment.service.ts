@@ -1,22 +1,13 @@
 import paymentRepository from '../repositories/payment.repository'
-import { NotFoundException, InvalidInputException, DuplicateResourceException } from '../../../shared/errors/http-exception'
-import type { CreatePaymentDto, UpdatePaymentDto, PaymentId, PaymentStatus } from '../types/payment.types'
-import type { UserId } from '../../users/types/user.types'
+import { NotFoundException, InvalidInputException } from '../../../shared/errors/http-exception'
+import type { CreatePaymentDto, UpdatePaymentDto, PaymentId } from '../types/payment.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
-import { createPaymentSchema, updatePaymentSchema, paymentStatusEnum } from '../zodSchemas/payment.schema'
 
-const create = async ({ userId, amount, currency, paymentMethod, transactionId }: CreatePaymentDto) => {
-  const existingPayment = await paymentRepository.getByTransactionId(transactionId)
-  if (existingPayment) {
-    throw new DuplicateResourceException('payment transaction')
-  }
-
-  const payment = await paymentRepository.create({ userId, amount, currency, paymentMethod, transactionId })
+const create = async (data: CreatePaymentDto) => {
+  const payment = await paymentRepository.create(data)
   if (!payment) {
     throw new InvalidInputException('Failed to create payment')
   }
-
-  await handlePaymentStatus(payment)
   return payment
 }
 
@@ -28,28 +19,18 @@ const getById = async (id: PaymentId) => {
   return payment
 }
 
-const update = async (id: PaymentId, { status, statusReason }: UpdatePaymentDto) => {
-  const payment = await paymentRepository.update(id, { status, statusReason })
+const update = async (id: PaymentId, data: UpdatePaymentDto) => {
+  const payment = await paymentRepository.update(id, data)
   if (!payment) {
     throw new NotFoundException('Payment not found')
   }
-
-  await handlePaymentStatus(payment)
   return payment
 }
 
-const getByUserId = async (userId: UserId) => {
-  const payments = await paymentRepository.getByUserId(userId)
+const getByCurriculumId = async (curriculumId: string) => {
+  const payments = await paymentRepository.getByCurriculumId(curriculumId)
   if (!payments.length) {
-    throw new NotFoundException('No payments found for user')
-  }
-  return payments
-}
-
-const getByStatus = async (status: PaymentStatus) => {
-  const payments = await paymentRepository.getByStatus(status)
-  if (!payments.length) {
-    throw new NotFoundException('No payments found with this status')
+    throw new NotFoundException('No payments found for curriculum')
   }
   return payments
 }
@@ -70,19 +51,10 @@ const getPaginated = async ({ page, limit }: PaginationParams) => {
   return paginatedPayments
 }
 
-// Helper function to handle payment status updates
-const handlePaymentStatus = async (payment: any) => {
-  // Here you would implement payment status handling logic
-  // For example, sending notifications, updating related records, etc.
-  // This is just a placeholder for demonstration
-  console.log(`Handling payment status update for payment ${payment.id}: ${payment.status}`)
-}
-
 export default {
   create,
   getById,
   update,
-  getByUserId,
-  getByStatus,
+  getByCurriculumId,
   getPaginated,
 } 
