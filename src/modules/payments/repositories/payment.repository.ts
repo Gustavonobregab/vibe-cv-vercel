@@ -1,89 +1,112 @@
 import { db } from '../../../shared/database/config'
-import { payables } from '../entities/payable.entity'
-import { curriculums } from '../../curriculums/entities/curriculum.entity'
+import { payments } from '../entities/payment.entity'
 import { eq, desc, sql } from 'drizzle-orm'
+import type { Payment, PaymentId, PaymentStatus } from '../types/payment.types'
+import type { UserId } from '../../users/types/user.types'
+import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async (data: {
-  userId: string;
-  amount: number;
-  currency: string;
-  paymentMethod: 'pix' | 'credit';
-  transactionId: string;
-  curriculumId: string;
-}) => {
-  // Convert the numeric amount to a string for the decimal column
-  const payableData = {
-    curriculumId: data.curriculumId,
-    amount: data.amount.toString(),
-    currency: data.currency,
-    paymentMethod: data.paymentMethod,
-    transactionId: data.transactionId,
-    status: 'pending' as const,
-  };
-
-  const [payment] = await db.insert(payables).values(payableData).returning()
+const create = async ({
+  userId,
+  amount,
+  currency,
+  paymentMethod,
+  transactionId
+}: {
+  userId: UserId
+  amount: number
+  currency: string
+  paymentMethod: string
+  transactionId: string
+}): Promise<Payment> => {
+  const [payment] = await db.insert(payments).values({
+    userId,
+    amount: amount.toString(),
+    currency,
+    paymentMethod,
+    transactionId,
+    status: 'pending' as const
+  }).returning()
   return payment
 }
 
-const getById = async (id: string) => {
+const getById = async (id: PaymentId): Promise<Payment | undefined> => {
   const [payment] = await db
     .select()
-    .from(payables)
-    .where(eq(payables.id, id))
+    .from(payments)
+    .where(eq(payments.id, id))
 
   return payment
 }
 
-const update = async (id: string, data: {
-  status: 'pending' | 'paid' | 'cancelled' | 'failed';
-  statusReason?: string
-}) => {
+const getByTransactionId = async (transactionId: string): Promise<Payment | undefined> => {
   const [payment] = await db
-    .update(payables)
-    .set(data)
-    .where(eq(payables.id, id))
+    .select()
+    .from(payments)
+    .where(eq(payments.transactionId, transactionId))
+
+  return payment
+}
+
+const update = async (
+  id: PaymentId,
+  {
+    status,
+    statusReason
+  }: {
+    status: PaymentStatus
+    statusReason?: string
+  }
+): Promise<Payment> => {
+  const [payment] = await db
+    .update(payments)
+    .set({
+      status: status as const,
+      statusReason,
+      updatedAt: new Date()
+    })
+    .where(eq(payments.id, id))
     .returning()
 
   return payment
 }
 
-const getByUserId = async (userId: string) => {
-  // Join with curriculums to get the userId
+const getByUserId = async (userId: UserId): Promise<Payment[]> => {
   return await db
     .select()
-    .from(payables)
-    .innerJoin(curriculums, eq(payables.curriculumId, curriculums.id))
-    .where(eq(curriculums.userId, userId))
-    .orderBy(desc(payables.createdAt))
+    .from(payments)
+    .where(eq(payments.userId, userId))
+    .orderBy(desc(payments.createdAt))
 }
 
-const getByStatus = async (status: 'pending' | 'paid' | 'cancelled' | 'failed') => {
+const getByStatus = async (status: PaymentStatus): Promise<Payment[]> => {
   return await db
     .select()
-    .from(payables)
-    .where(eq(payables.status, status))
-    .orderBy(desc(payables.createdAt))
+    .from(payments)
+    .where(eq(payments.status, status as const))
+    .orderBy(desc(payments.createdAt))
 }
 
-const getByTransactionId = async (transactionId: string) => {
-  const [payment] = await db
-    .select()
-    .from(payables)
-    .where(eq(payables.transactionId, transactionId))
-
-  return payment
-}
-
-const getPaginated = async (params: { page: number; limit: number }) => {
-  const { page = 1, limit = 10 } = params
+const getPaginated = async ({
+  page = 1,
+  limit = 10
+}: {
+  page?: number
+  limit?: number
+}): Promise<{
+  items: Payment[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}> => {
   const offset = (page - 1) * limit
 
   const [total, items] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(payables),
+    db.select({ count: sql<number>`count(*)` }).from(payments),
     db
       .select()
-      .from(payables)
-      .orderBy(desc(payables.createdAt))
+      .from(payments)
+      .orderBy(desc(payments.createdAt))
       .limit(limit)
       .offset(offset),
   ])
@@ -100,9 +123,9 @@ const getPaginated = async (params: { page: number; limit: number }) => {
 export default {
   create,
   getById,
+  getByTransactionId,
   update,
   getByUserId,
   getByStatus,
-  getByTransactionId,
   getPaginated,
 } 

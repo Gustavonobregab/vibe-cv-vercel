@@ -1,63 +1,48 @@
 import paymentRepository from '../repositories/payment.repository'
 import { NotFoundException, InvalidInputException, DuplicateResourceException } from '../../../shared/errors/http-exception'
-import { CreatePaymentDto, UpdatePaymentDto, PaginationParams } from '../../../shared/types/common.types'
+import type { CreatePaymentDto, UpdatePaymentDto, PaymentId, PaymentStatus } from '../types/payment.types'
+import type { UserId } from '../../users/types/user.types'
+import type { PaginationParams } from '../../../shared/types/common.types'
 import { createPaymentSchema, updatePaymentSchema, paymentStatusEnum } from '../zodSchemas/payment.schema'
 
-type PaymentStatus = typeof paymentStatusEnum._type
-
-const create = async (data: CreatePaymentDto) => {
-  // Validate input data
-  const validatedData = createPaymentSchema.parse(data)
-
-  // Check for duplicate transaction
-  const existingPayment = await paymentRepository.getByTransactionId(validatedData.transactionId)
+const create = async ({ userId, amount, currency, paymentMethod, transactionId }: CreatePaymentDto) => {
+  const existingPayment = await paymentRepository.getByTransactionId(transactionId)
   if (existingPayment) {
     throw new DuplicateResourceException('payment transaction')
   }
 
-  // Create payment
-  const payment = await paymentRepository.create(validatedData)
+  const payment = await paymentRepository.create({ userId, amount, currency, paymentMethod, transactionId })
   if (!payment) {
     throw new InvalidInputException('Failed to create payment')
   }
 
-  // Handle payment status updates
   await handlePaymentStatus(payment)
-
   return payment
 }
 
-const getById = async (id: string) => {
+const getById = async (id: PaymentId) => {
   const payment = await paymentRepository.getById(id)
   if (!payment) {
     throw new NotFoundException('Payment not found')
   }
-
   return payment
 }
 
-const update = async (id: string, { status, statusReason }: UpdatePaymentDto) => {
-  // Validate input data
-  const validatedData = updatePaymentSchema.parse({ status, statusReason })
-
-  // Update payment
-  const payment = await paymentRepository.update(id, validatedData)
+const update = async (id: PaymentId, { status, statusReason }: UpdatePaymentDto) => {
+  const payment = await paymentRepository.update(id, { status, statusReason })
   if (!payment) {
     throw new NotFoundException('Payment not found')
   }
 
-  // Handle payment status updates
   await handlePaymentStatus(payment)
-
   return payment
 }
 
-const getByUserId = async (userId: string) => {
+const getByUserId = async (userId: UserId) => {
   const payments = await paymentRepository.getByUserId(userId)
   if (!payments.length) {
     throw new NotFoundException('No payments found for user')
   }
-
   return payments
 }
 
@@ -66,7 +51,6 @@ const getByStatus = async (status: PaymentStatus) => {
   if (!payments.length) {
     throw new NotFoundException('No payments found with this status')
   }
-
   return payments
 }
 

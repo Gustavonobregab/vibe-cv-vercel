@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { idSchema, dateFieldsSchema, paginatedResponseSchema } from '../../../shared/zodSchemas/common.schema'
 
 // Curriculum status enum
-export const curriculumStatusEnum = z.enum(['draft', 'published', 'archived'])
+export const curriculumStatusEnum = z.enum(['draft', 'submitted', 'processing', 'completed', 'failed'])
 
 // Create curriculum request schema
 export const createCurriculumSchema = z.object({

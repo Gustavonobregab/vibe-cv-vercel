@@ -1,13 +1,24 @@
 import { db } from '../../../shared/database/config'
-import { curriculums } from '../entities/curriculum.entity'
+import { curriculums, curriculumStatusEnum } from '../entities/curriculum.entity'
 import { eq, desc, sql } from 'drizzle-orm'
+import type { Curriculum } from '../types/curriculum.types'
 
-const createCurriculum = async (data: { title: string; content: string; rawContent: string; userId: string }) => {
-  const [curriculum] = await db.insert(curriculums).values(data).returning()
+const createCurriculum = async ({
+  title,
+  content,
+  rawContent,
+  userId
+}: {
+  title: string
+  content: string
+  rawContent: string
+  userId: string
+}): Promise<Curriculum> => {
+  const [curriculum] = await db.insert(curriculums).values({ title, content, rawContent, userId }).returning()
   return curriculum
 }
 
-const getCurriculumById = async (id: string) => {
+const getCurriculumById = async (id: string): Promise<Curriculum | undefined> => {
   const [curriculum] = await db
     .select()
     .from(curriculums)
@@ -16,17 +27,30 @@ const getCurriculumById = async (id: string) => {
   return curriculum
 }
 
-const updateCurriculum = async (id: string, data: { title?: string; content?: string; rawContent?: string; status?: 'draft' | 'published' | 'archived' }) => {
+const updateCurriculum = async (
+  id: string,
+  {
+    title,
+    content,
+    rawContent,
+    status
+  }: {
+    title?: string
+    content?: string
+    rawContent?: string
+    status?: typeof curriculumStatusEnum.enumValues[number]
+  }
+): Promise<Curriculum> => {
   const [curriculum] = await db
     .update(curriculums)
-    .set(data)
+    .set({ title, content, rawContent, status })
     .where(eq(curriculums.id, id))
     .returning()
 
   return curriculum
 }
 
-const getCurriculumsByStatus = async (status: 'draft' | 'published' | 'archived') => {
+const getCurriculumsByStatus = async (status: typeof curriculumStatusEnum.enumValues[number]): Promise<Curriculum[]> => {
   return await db
     .select()
     .from(curriculums)
@@ -34,7 +58,7 @@ const getCurriculumsByStatus = async (status: 'draft' | 'published' | 'archived'
     .orderBy(desc(curriculums.createdAt))
 }
 
-const getCurriculumsByUserId = async (userId: string) => {
+const getCurriculumsByUserId = async (userId: string): Promise<Curriculum[]> => {
   return await db
     .select()
     .from(curriculums)
@@ -42,7 +66,16 @@ const getCurriculumsByUserId = async (userId: string) => {
     .orderBy(desc(curriculums.createdAt))
 }
 
-const getCurriculumsPaginated = async (page: number = 1, limit: number = 10) => {
+const getCurriculumsPaginated = async (
+  page: number = 1,
+  limit: number = 10
+): Promise<{
+  items: Curriculum[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}> => {
   const offset = (page - 1) * limit
 
   const [total, items] = await Promise.all([

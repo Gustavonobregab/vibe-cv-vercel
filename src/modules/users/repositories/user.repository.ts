@@ -1,13 +1,30 @@
 import { db } from '../../../shared/database/config'
 import { users } from '../entities/user.entity'
 import { eq } from 'drizzle-orm'
+import type { User } from '../types/user.types'
 
-const createUser = async (data: { googleId: string; email: string; name: string; picture?: string }) => {
-  const [user] = await db.insert(users).values(data).returning()
+const createUser = async ({
+  googleId,
+  email,
+  name,
+  picture
+}: {
+  googleId: string
+  email: string
+  name: string
+  picture?: string
+}): Promise<User> => {
+  const [user] = await db.insert(users).values({
+    googleId,
+    email,
+    name,
+    picture,
+    isActive: true
+  }).returning()
   return user
 }
 
-const getUserById = async (id: string) => {
+const getUserById = async (id: string): Promise<User | undefined> => {
   const [user] = await db
     .select()
     .from(users)
@@ -16,7 +33,7 @@ const getUserById = async (id: string) => {
   return user
 }
 
-const getUserByGoogleId = async (googleId: string) => {
+const getUserByGoogleId = async (googleId: string): Promise<User | undefined> => {
   const [user] = await db
     .select()
     .from(users)
@@ -25,7 +42,7 @@ const getUserByGoogleId = async (googleId: string) => {
   return user
 }
 
-const getUserByEmail = async (email: string) => {
+const getUserByEmail = async (email: string): Promise<User | undefined> => {
   const [user] = await db
     .select()
     .from(users)
@@ -34,10 +51,26 @@ const getUserByEmail = async (email: string) => {
   return user
 }
 
-const updateUser = async (id: string, data: { name?: string; picture?: string; isActive?: boolean }) => {
+const updateUser = async (
+  id: string,
+  {
+    name,
+    picture,
+    isActive
+  }: {
+    name?: string
+    picture?: string
+    isActive?: boolean
+  }
+): Promise<User> => {
   const [user] = await db
     .update(users)
-    .set(data)
+    .set({
+      name,
+      picture,
+      isActive,
+      updatedAt: new Date()
+    })
     .where(eq(users.id, id))
     .returning()
 

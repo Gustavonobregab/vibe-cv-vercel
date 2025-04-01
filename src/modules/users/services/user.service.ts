@@ -1,26 +1,26 @@
 import userRepository from '../repositories/user.repository'
 import { NotFoundException, InvalidInputException, DuplicateResourceException } from '../../../shared/errors/http-exception'
+import type { CreateUserDto, UpdateUserDto, UserId } from '../types/user.types'
+import type { PaginationParams } from '../../../shared/types/common.types'
 
-const createUser = async (data: { googleId: string; email: string; name: string; picture?: string }) => {
-  const existingUser = await userRepository.getUserByGoogleId(data.googleId)
+const create = async ({ googleId, email, name, picture }: CreateUserDto) => {
+  const existingUser = await userRepository.getByGoogleId(googleId)
   if (existingUser) {
     throw new DuplicateResourceException('user')
   }
 
-  const user = await userRepository.createUser(data)
+  const user = await userRepository.create({ googleId, email, name, picture })
   if (!user) {
     throw new InvalidInputException('Failed to create user')
   }
-
   return user
 }
 
-const getUserById = async (id: string) => {
-  const user = await userRepository.getUserById(id)
+const getById = async (id: UserId) => {
+  const user = await userRepository.getById(id)
   if (!user) {
     throw new NotFoundException('User not found')
   }
-
   return user
 }
 
@@ -42,19 +42,35 @@ const getUserByEmail = async (email: string) => {
   return user
 }
 
-const updateUser = async (id: string, data: { name?: string; picture?: string; isActive?: boolean }) => {
-  const user = await userRepository.updateUser(id, data)
+const update = async (id: UserId, { name, picture, isActive }: UpdateUserDto) => {
+  const user = await userRepository.update(id, { name, picture, isActive })
   if (!user) {
     throw new NotFoundException('User not found')
   }
-
   return user
 }
 
+const getPaginated = async ({ page, limit }: PaginationParams) => {
+  const validatedPage = page ?? 1
+  const validatedLimit = limit ?? 10
+
+  if (validatedPage < 1 || validatedLimit < 1) {
+    throw new InvalidInputException('Invalid pagination parameters')
+  }
+
+  const paginatedUsers = await userRepository.getPaginated({ page: validatedPage, limit: validatedLimit })
+  if (!paginatedUsers.items.length) {
+    throw new NotFoundException('No users found')
+  }
+
+  return paginatedUsers
+}
+
 export default {
-  createUser,
-  getUserById,
+  create,
+  getById,
   getUserByGoogleId,
   getUserByEmail,
-  updateUser,
+  update,
+  getPaginated,
 } 

@@ -1,12 +1,18 @@
-import { pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { users } from '../../users/entities/user.entity'
 
-export const curriculumStatusEnum = pgEnum('curriculum_status', ['draft', 'published', 'archived'])
+export const curriculumStatusEnum = pgEnum('curriculum_status', [
+  'draft',
+  'submitted',
+  'processing',
+  'completed',
+  'failed'
+])
 
 export const curriculums = pgTable('curriculums', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
-  title: varchar('title', { length: 255 }).notNull(),
+  title: text('title').notNull(),
   content: text('content').notNull(),
   rawContent: text('raw_content').notNull(),
   status: curriculumStatusEnum('status').notNull().default('draft'),
