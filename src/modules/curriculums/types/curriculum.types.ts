@@ -1,11 +1,19 @@
 import { z } from 'zod'
-import { curriculums, curriculumStatusEnum } from '../entities/curriculum.entity'
-import type { InferModel } from 'drizzle-orm'
-import type { UserId } from '../../users/types/user.types'
+import { curriculumStatusEnum } from '../entities/curriculum.entity'
 import { createCurriculumSchema, updateCurriculumSchema } from '../zodSchemas/curriculum.schema'
 
-export type Curriculum = InferModel<typeof curriculums>
-export type NewCurriculum = InferModel<typeof curriculums, 'insert'>
+export type Curriculum = {
+  id: string
+  userId: string
+  title: string
+  content: string
+  rawContent: string
+  status: CurriculumStatus
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type NewCurriculum = Omit<Curriculum, 'id' | 'createdAt' | 'updatedAt'>
 export type CurriculumId = string
 
 export type CurriculumStatus = typeof curriculumStatusEnum.enumValues[number]

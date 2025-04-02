@@ -3,12 +3,12 @@ import { NotFoundException, InvalidInputException } from '../../../shared/errors
 import type { CreatePaymentDto, UpdatePaymentDto, PaymentId } from '../types/payment.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async (data: CreatePaymentDto) => {
-  const payment = await paymentRepository.create(data)
-  if (!payment) {
+const create = async (payment: CreatePaymentDto) => {
+  const newPayment = await paymentRepository.create(payment)
+  if (!newPayment) {
     throw new InvalidInputException('Failed to create payment')
   }
-  return payment
+  return newPayment
 }
 
 const getById = async (id: PaymentId) => {
@@ -19,12 +19,12 @@ const getById = async (id: PaymentId) => {
   return payment
 }
 
-const update = async (id: PaymentId, data: UpdatePaymentDto) => {
-  const payment = await paymentRepository.update(id, data)
-  if (!payment) {
+const update = async (id: PaymentId, payment: UpdatePaymentDto) => {
+  const updatedPayment = await paymentRepository.update(id, payment)
+  if (!updatedPayment) {
     throw new NotFoundException('Payment not found')
   }
-  return payment
+  return updatedPayment
 }
 
 const getByCurriculumId = async (curriculumId: string) => {
@@ -35,9 +35,9 @@ const getByCurriculumId = async (curriculumId: string) => {
   return payments
 }
 
-const getPaginated = async ({ page, limit }: PaginationParams) => {
-  const validatedPage = page ?? 1
-  const validatedLimit = limit ?? 10
+const getPaginated = async (params: PaginationParams) => {
+  const validatedPage = params.page ?? 1
+  const validatedLimit = params.limit ?? 10
 
   if (validatedPage < 1 || validatedLimit < 1) {
     throw new InvalidInputException('Invalid pagination parameters')

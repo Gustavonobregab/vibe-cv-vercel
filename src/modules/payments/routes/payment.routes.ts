@@ -3,7 +3,6 @@ import paymentController from '../controllers/payment.controller'
 
 const router = Router()
 
-// Payment routes
 router.post('/', paymentController.createPayment)
 router.get('/curriculum/:curriculumId', paymentController.getPaymentsByCurriculumId)
 router.get('/:id', paymentController.getPaymentById)

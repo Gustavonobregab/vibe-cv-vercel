@@ -4,8 +4,8 @@ import { idSchema, dateFieldsSchema } from '../../../shared/zodSchemas/common.sc
 // User status enum
 export const userStatusEnum = z.enum(['active', 'inactive', 'suspended'])
 
-// Create user request schema (for Google auth)
-export const createUserSchema = z.object({
+// Create user from Google auth schema
+export const createFromGoogleSchema = z.object({
   googleId: z.string().min(1),
   email: z.string().email(),
   name: z.string().min(1).max(255),
@@ -22,6 +22,14 @@ export const completeProfileSchema = z.object({
   company: z.string().max(100).optional(),
   jobTitle: z.string().max(100).optional(),
   cvFileUrl: z.string().url().optional(),
+})
+
+// Update Google profile schema
+export const updateGoogleProfileSchema = z.object({
+  googleId: z.string().min(1),
+  name: z.string().min(1).max(255),
+  picture: z.string().url().optional(),
+  isActive: z.boolean().optional(),
 })
 
 // Update user request schema

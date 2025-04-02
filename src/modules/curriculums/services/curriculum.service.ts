@@ -4,12 +4,12 @@ import type { CreateCurriculumDto, UpdateCurriculumDto, CurriculumId } from '../
 import type { UserId } from '../../users/types/user.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async ({ userId, title, content, rawContent }: CreateCurriculumDto) => {
-  const curriculum = await curriculumRepository.create({ userId, title, content, rawContent })
-  if (!curriculum) {
+const create = async (curriculum: CreateCurriculumDto) => {
+  const newCurriculum = await curriculumRepository.create(curriculum)
+  if (!newCurriculum) {
     throw new InvalidInputException('Failed to create curriculum')
   }
-  return curriculum
+  return newCurriculum
 }
 
 const getById = async (id: CurriculumId) => {
@@ -20,12 +20,12 @@ const getById = async (id: CurriculumId) => {
   return curriculum
 }
 
-const update = async (id: CurriculumId, { title, content, rawContent, status }: UpdateCurriculumDto) => {
-  const curriculum = await curriculumRepository.update(id, { title, content, rawContent, status })
-  if (!curriculum) {
+const update = async (id: CurriculumId, curriculum: UpdateCurriculumDto) => {
+  const updatedCurriculum = await curriculumRepository.update(id, curriculum)
+  if (!updatedCurriculum) {
     throw new NotFoundException('Curriculum not found')
   }
-  return curriculum
+  return updatedCurriculum
 }
 
 const getByUserId = async (userId: UserId) => {
@@ -36,9 +36,9 @@ const getByUserId = async (userId: UserId) => {
   return curriculums
 }
 
-const getPaginated = async ({ page, limit }: PaginationParams) => {
-  const validatedPage = page ?? 1
-  const validatedLimit = limit ?? 10
+const getPaginated = async (params: PaginationParams) => {
+  const validatedPage = params.page ?? 1
+  const validatedLimit = params.limit ?? 10
 
   if (validatedPage < 1 || validatedLimit < 1) {
     throw new InvalidInputException('Invalid pagination parameters')

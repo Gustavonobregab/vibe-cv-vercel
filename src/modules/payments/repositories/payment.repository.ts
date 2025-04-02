@@ -4,12 +4,12 @@ import { eq, desc, sql } from 'drizzle-orm'
 import type { Payment, CreatePaymentDto, UpdatePaymentDto } from '../types/payment.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async (data: CreatePaymentDto): Promise<Payment> => {
-  const [payment] = await db.insert(payments).values({
-    ...data,
-    amount: data.amount.toString()
+const create = async (payment: CreatePaymentDto): Promise<Payment> => {
+  const [newPayment] = await db.insert(payments).values({
+    ...payment,
+    amount: payment.amount.toString()
   }).returning()
-  return payment
+  return newPayment
 }
 
 const getById = async (id: string): Promise<Payment | undefined> => {
@@ -21,14 +21,14 @@ const getById = async (id: string): Promise<Payment | undefined> => {
   return payment
 }
 
-const update = async (id: string, data: UpdatePaymentDto): Promise<Payment> => {
-  const [payment] = await db
+const update = async (id: string, payment: UpdatePaymentDto): Promise<Payment> => {
+  const [updatedPayment] = await db
     .update(payments)
-    .set(data)
+    .set(payment)
     .where(eq(payments.id, id))
     .returning()
 
-  return payment
+  return updatedPayment
 }
 
 const getByCurriculumId = async (curriculumId: string): Promise<Payment[]> => {
@@ -39,13 +39,15 @@ const getByCurriculumId = async (curriculumId: string): Promise<Payment[]> => {
     .orderBy(desc(payments.createdAt))
 }
 
-const getPaginated = async ({ page = 1, limit = 10 }: PaginationParams): Promise<{
+const getPaginated = async (params: PaginationParams): Promise<{
   items: Payment[]
   total: number
   page: number
   limit: number
   totalPages: number
 }> => {
+  const page = params.page ?? 1
+  const limit = params.limit ?? 10
   const offset = (page - 1) * limit
 
   const [total, items] = await Promise.all([

@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm'
 import { users } from '../../modules/users/entities/user.entity'
-import { payables } from '../../modules/payments/entities/payable.entity'
 import { curriculums } from '../../modules/curriculums/entities/curriculum.entity'
+import { payments } from '../../modules/payments/entities/payment.entity'
 
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -13,15 +13,15 @@ export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
     fields: [curriculums.userId],
     references: [users.id],
   }),
-  payables: many(payables),
+  payments: many(payments),
 }))
 
-export const payablesRelations = relations(payables, ({ one }) => ({
+export const paymentsRelations = relations(payments, ({ one }) => ({
   curriculum: one(curriculums, {
-    fields: [payables.curriculumId],
+    fields: [payments.curriculumId],
     references: [curriculums.id],
   }),
 }))
 
 // Export all entities
-export { users, payables, curriculums } 
+export { users, payments, curriculums } 

@@ -17,7 +17,7 @@ const setupPassport = () => {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          const user = await validateGoogleUser(profile as GoogleProfile)
+          const user = await createUser(profile as GoogleProfile)
           done(null, user)
         } catch (error) {
           done(error as Error)
@@ -43,13 +43,13 @@ const setupPassport = () => {
   })
 }
 
-const validateGoogleUser = async (profile: GoogleProfile): Promise<User> => {
+const createUser = async (profile: GoogleProfile): Promise<User> => {
   const { id, displayName, emails, photos } = profile
   const email = emails[0].value
   const picture = photos?.[0]?.value
 
   // Find or create user
-  const existingUser = await userService.getByGoogleId(id)
+  const existingUser = await userService.getUserByGoogleId(id)
   if (!existingUser) {
     return await userService.createFromGoogle({
       googleId: id,
@@ -86,7 +86,7 @@ const getUserById = async (id: string): Promise<PassportUser | null> => {
 
 export default {
   setupPassport,
-  validateGoogleUser,
+  createUser,
   generateJwtToken,
   verifyToken,
   getUserById

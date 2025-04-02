@@ -63,77 +63,44 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      scope: ["email", "profile"],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // 2. Busca usuário existente pelo googleId
-        const existingUser = await userService.getByGoogleId(profile.id);
-
-        if (existingUser) {
-          // 3a. Se existe, atualiza dados do Google
-          const updatedUser = await userService.updateGoogleProfile(
-            existingUser.id,
-            {
-              email: profile.emails[0].value,
-              name: profile.displayName,
-              picture: profile.photos?.[0]?.value,
-            }
-          );
-          return done(null, updatedUser);
-        }
-
-        // 3b. Se não existe, cria novo usuário
-        const newUser = await userService.createFromGoogle({
-          googleId: profile.id,
-          email: profile.emails[0].value,
-          name: profile.displayName,
-          picture: profile.photos?.[0]?.value,
-          isActive: true,
-        });
-        return done(null, newUser);
+        // 2. Valida e cria/atualiza usuário
+        const user = await validateGoogleUser(profile as GoogleProfile);
+        done(null, user);
       } catch (error) {
-        return done(error);
+        done(error as Error);
       }
     }
   )
 );
 ```
 
-### 4. Validações no Serviço
+### 4. Validação e Criação do Usuário
 
-O serviço de usuário realiza várias validações antes de criar um novo usuário:
+O serviço de autenticação valida e cria o usuário:
 
 ```typescript
-const createFromGoogle = async (data: CreateGoogleUserDto) => {
-  // 1. Verifica se já existe usuário com este googleId
-  const existingByGoogleId = await userRepository.getByGoogleId(data.googleId);
-  if (existingByGoogleId) {
-    throw new DuplicateResourceException(
-      "User with this Google ID already exists"
-    );
+const createUser = async (profile: GoogleProfile): Promise<User> => {
+  const { id, displayName, emails, photos } = profile;
+  const email = emails[0].value;
+  const picture = photos?.[0]?.value;
+
+  // Find or create user
+  const existingUser = await userService.getUserByGoogleId(id);
+  if (!existingUser) {
+    return await userService.createFromGoogle({
+      googleId: id,
+      email,
+      name: displayName,
+      picture,
+      isActive: true,
+    });
   }
 
-  // 2. Verifica se já existe usuário com este email
-  const existingByEmail = await userRepository.getByEmail(data.email);
-  if (existingByEmail) {
-    // Se existe usuário com este email mas sem googleId, atualiza
-    if (!existingByEmail.googleId) {
-      return await userRepository.update(existingByEmail.id, {
-        googleId: data.googleId,
-        name: data.name,
-        picture: data.picture,
-        isActive: true,
-      });
-    }
-    throw new DuplicateResourceException("User with this email already exists");
-  }
-
-  // 3. Cria novo usuário
-  const user = await userRepository.create(data);
-  if (!user) {
-    throw new InvalidInputException("Failed to create user");
-  }
-  return user;
+  return existingUser;
 };
 ```
 
@@ -142,12 +109,21 @@ const createFromGoogle = async (data: CreateGoogleUserDto) => {
 O repositório cria o usuário no banco de dados:
 
 ```typescript
-const create = async (data: CreateGoogleUserDto): Promise<User> => {
+const create = async ({
+  googleId,
+  email,
+  name,
+  picture,
+  isActive,
+}: CreateFromGoogleDto): Promise<User> => {
   const [user] = await db
     .insert(users)
     .values({
-      ...data,
-      isActive: true,
+      googleId,
+      email,
+      name,
+      picture,
+      isActive,
     })
     .returning();
   return user;
@@ -176,8 +152,12 @@ const create = async (data: CreateGoogleUserDto): Promise<User> => {
 ### Users
 
 - `GET /users/:id` - Busca usuário por ID
+- `GET /users/google/:googleId` - Busca usuário por Google ID
+- `GET /users/email/:email` - Busca usuário por email
 - `PUT /users/:id` - Atualiza dados do usuário
-- `GET /users/me` - Retorna usuário autenticado
+- `PATCH /users/:id/complete-profile` - Completa perfil do usuário
+- `POST /users/:id/cv` - Faz upload do CV
+- `GET /users` - Lista usuários (paginação)
 
 > Nota: Não existe endpoint de criação de usuário público. Usuários são criados automaticamente no primeiro login com Google.
 

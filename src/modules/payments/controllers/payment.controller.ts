@@ -8,37 +8,37 @@ import {
   getPaymentsByCurriculumIdSchema,
 } from '../zodSchemas/payment.schema'
 import { paginationSchema } from '../../../shared/zodSchemas/common.schema'
-import { NotFoundException } from '../../../shared/errors/http-exception'
+import { HttpStatus } from '../../../shared/errors/http-status'
 
 const createPayment = async (req: Request, res: Response) => {
   const validatedData = validateBody(req).with(createPaymentSchema)
   const payment = await paymentService.create(validatedData)
-  res.status(201).json(payment)
+  res.status(HttpStatus.CREATED).json(payment)
 }
 
 const getPaymentById = async (req: Request, res: Response) => {
   const { id } = validateParams(req).with(getPaymentByIdSchema)
   const payment = await paymentService.getById(id)
-  res.json(payment)
+  res.status(HttpStatus.OK).json(payment)
 }
 
 const getPaymentByTransactionId = async (req: Request, res: Response) => {
   const { id: transactionId } = validateParams(req).with(getPaymentByIdSchema)
   const payment = await paymentService.getById(transactionId)
-  res.json(payment)
+  res.status(HttpStatus.OK).json(payment)
 }
 
 const updatePayment = async (req: Request, res: Response) => {
   const { id } = validateParams(req).with(getPaymentByIdSchema)
   const validatedData = validateBody(req).with(updatePaymentSchema)
   const payment = await paymentService.update(id, validatedData)
-  res.json(payment)
+  res.status(HttpStatus.OK).json(payment)
 }
 
 const getPaymentsByCurriculumId = async (req: Request, res: Response) => {
   const { curriculumId } = validateParams(req).with(getPaymentsByCurriculumIdSchema)
   const payments = await paymentService.getByCurriculumId(curriculumId)
-  res.json(payments)
+  res.status(HttpStatus.OK).json(payments)
 }
 
 const getPaymentsPaginated = async (req: Request, res: Response) => {
@@ -47,7 +47,7 @@ const getPaymentsPaginated = async (req: Request, res: Response) => {
     page: Number(page),
     limit: Number(limit)
   })
-  res.json(payments)
+  res.status(HttpStatus.OK).json(payments)
 }
 
 export default {

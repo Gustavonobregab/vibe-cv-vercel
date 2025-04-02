@@ -4,9 +4,9 @@ import { eq, desc, sql } from 'drizzle-orm'
 import type { Curriculum, CreateCurriculumDto, UpdateCurriculumDto } from '../types/curriculum.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async (data: CreateCurriculumDto): Promise<Curriculum> => {
-  const [curriculum] = await db.insert(curriculums).values(data).returning()
-  return curriculum
+const create = async (curriculum: CreateCurriculumDto): Promise<Curriculum> => {
+  const [newCurriculum] = await db.insert(curriculums).values(curriculum).returning()
+  return newCurriculum
 }
 
 const getById = async (id: string): Promise<Curriculum | undefined> => {
@@ -18,14 +18,14 @@ const getById = async (id: string): Promise<Curriculum | undefined> => {
   return curriculum
 }
 
-const update = async (id: string, data: UpdateCurriculumDto): Promise<Curriculum> => {
-  const [curriculum] = await db
+const update = async (id: string, curriculum: UpdateCurriculumDto): Promise<Curriculum> => {
+  const [updatedCurriculum] = await db
     .update(curriculums)
-    .set(data)
+    .set(curriculum)
     .where(eq(curriculums.id, id))
     .returning()
 
-  return curriculum
+  return updatedCurriculum
 }
 
 const getByStatus = async (status: typeof curriculumStatusEnum.enumValues[number]): Promise<Curriculum[]> => {
@@ -44,13 +44,15 @@ const getByUserId = async (userId: string): Promise<Curriculum[]> => {
     .orderBy(desc(curriculums.createdAt))
 }
 
-const getPaginated = async ({ page = 1, limit = 10 }: PaginationParams): Promise<{
+const getPaginated = async (params: PaginationParams): Promise<{
   items: Curriculum[]
   total: number
   page: number
   limit: number
   totalPages: number
 }> => {
+  const page = params.page ?? 1
+  const limit = params.limit ?? 10
   const offset = (page - 1) * limit
 
   const [total, items] = await Promise.all([

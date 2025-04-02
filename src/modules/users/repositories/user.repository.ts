@@ -1,45 +1,67 @@
-import { db } from '../../../shared/database'
+import { db } from '../../../shared/database/config'
 import { users } from '../entities/user.entity'
 import { eq, desc } from 'drizzle-orm'
-import type { CreateGoogleUserDto, UpdateUserDto, UserId } from '../types/user.types'
+import type { CreateFromGoogleDto, UpdateUserDto, UpdateGoogleProfileDto, UserId } from '../types/user.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
-const create = async (data: CreateGoogleUserDto) => {
-  return await db.insert(users).values(data).returning()
+const create = async ({
+  googleId,
+  email,
+  name,
+  picture,
+  isActive
+}: CreateFromGoogleDto) => {
+  const [user] = await db.insert(users).values({
+    googleId,
+    email,
+    name,
+    picture,
+    isActive
+  }).returning()
+  return user
 }
 
 const getById = async (id: UserId) => {
-  return await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.id, id)
-  })
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+  return user
 }
 
 const getByGoogleId = async (googleId: string) => {
-  return await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.googleId, googleId)
-  })
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.googleId, googleId))
+  return user
 }
 
 const getByEmail = async (email: string) => {
-  return await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.email, email)
-  })
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+  return user
 }
 
-const update = async (id: UserId, data: UpdateUserDto) => {
-  return await db.update(users)
-    .set(data)
+const update = async (id: UserId, updateData: UpdateUserDto | UpdateGoogleProfileDto) => {
+  const [user] = await db
+    .update(users)
+    .set(updateData)
     .where(eq(users.id, id))
     .returning()
+  return user
 }
 
-const getPaginated = async ({ page, limit }: PaginationParams) => {
+const getPaginated = async ({ page = 1, limit = 10 }: PaginationParams) => {
   const offset = (page - 1) * limit
-  return await db.query.users.findMany({
-    limit,
-    offset,
-    orderBy: (users, { desc }) => [desc(users.createdAt)]
-  })
+  return await db
+    .select()
+    .from(users)
+    .orderBy(desc(users.createdAt))
+    .limit(limit)
+    .offset(offset)
 }
 
 export default {

@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import { createUserSchema, updateUserSchema } from '../../modules/users/zodSchemas/user.schema'
+import { createFromGoogleSchema, updateUserSchema } from '../../modules/users/zodSchemas/user.schema'
 import { createPaymentSchema, updatePaymentSchema } from '../../modules/payments/zodSchemas/payment.schema'
 import { createCurriculumSchema, updateCurriculumSchema } from '../../modules/curriculums/zodSchemas/curriculum.schema'
 
-export type CreateUserDto = z.infer<typeof createUserSchema>
+export type CreateUserDto = z.infer<typeof createFromGoogleSchema>
 export type UpdateUserDto = z.infer<typeof updateUserSchema>
 
 export type CreatePaymentDto = z.infer<typeof createPaymentSchema>
