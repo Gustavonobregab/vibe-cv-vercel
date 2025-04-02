@@ -2,21 +2,19 @@ import { z } from 'zod'
 import { idSchema, dateFieldsSchema, paginatedResponseSchema } from '../../../shared/zodSchemas/common.schema'
 
 // Curriculum status enum
-export const curriculumStatusEnum = z.enum(['draft', 'submitted', 'processing', 'completed', 'failed'])
+export const curriculumStatusEnum = z.enum(['to_review', 'reviewing', 'reviewed'])
 
 // Create curriculum request schema
 export const createCurriculumSchema = z.object({
   title: z.string().min(1).max(255),
-  content: z.string().min(1),
-  rawContent: z.string().min(1),
+  cvUrl: z.string().url(),
   userId: idSchema,
 })
 
 // Update curriculum request schema
 export const updateCurriculumSchema = z.object({
   title: z.string().min(1).max(255).optional(),
-  content: z.string().min(1).optional(),
-  rawContent: z.string().min(1).optional(),
+  cvUrl: z.string().url().optional(),
   status: curriculumStatusEnum.optional(),
 })
 
@@ -40,8 +38,7 @@ export const curriculumResponseSchema = z.object({
   id: idSchema,
   userId: idSchema,
   title: z.string(),
-  content: z.string(),
-  rawContent: z.string(),
+  cvUrl: z.string().url(),
   status: curriculumStatusEnum,
 }).merge(dateFieldsSchema)
 

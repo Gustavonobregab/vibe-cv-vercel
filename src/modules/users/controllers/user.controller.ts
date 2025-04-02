@@ -49,16 +49,6 @@ const getUsersPaginated = async (req: Request, res: Response) => {
   res.status(HttpStatus.OK).json(users)
 }
 
-const uploadCV = async (req: Request, res: Response) => {
-  if (!req.file) {
-    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'No file uploaded' })
-  }
-
-  const { id } = validateParams(req).with(getUserByIdSchema)
-  const user = await userService.uploadCV(id, req.file)
-  res.status(HttpStatus.OK).json(user)
-}
-
 export default {
   getUserById,
   getUserByGoogleId,
@@ -66,5 +56,4 @@ export default {
   updateUser,
   completeProfile,
   getUsersPaginated,
-  uploadCV
 } 

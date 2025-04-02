@@ -6,8 +6,7 @@ export type Curriculum = {
   id: string
   userId: string
   title: string
-  content: string
-  rawContent: string
+  cvUrl: string
   status: CurriculumStatus
   createdAt: Date
   updatedAt: Date

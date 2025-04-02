@@ -87,25 +87,6 @@ const getPaginated = async (params: PaginationParams) => {
   return await userRepository.getPaginated(params)
 }
 
-const uploadCV = async (id: UserId, file: Express.Multer.File) => {
-  const user = await userRepository.getById(id)
-  if (!user) {
-    throw new NotFoundException('User not found')
-  }
-
-  const { url } = await put(`users/${id}/cv.pdf`, file.buffer, {
-    access: 'public',
-    contentType: file.mimetype,
-  })
-
-  const updatedUser = await userRepository.update(id, { cvFileUrl: url })
-  if (!updatedUser) {
-    throw new InvalidInputException('Failed to update CV')
-  }
-
-  return updatedUser
-}
-
 export default {
   createFromGoogle,
   updateGoogleProfile,
@@ -114,6 +95,5 @@ export default {
   getUserByGoogleId,
   getUserByEmail,
   update,
-  getPaginated,
-  uploadCV
+  getPaginated
 } 
