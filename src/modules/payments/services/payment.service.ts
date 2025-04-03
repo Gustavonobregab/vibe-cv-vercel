@@ -3,7 +3,22 @@ import { NotFoundException, InvalidInputException } from '../../../shared/errors
 import type { CreatePaymentDto, UpdatePaymentDto, PaymentId } from '../types/payment.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 
+/**
+ * Create a new payment
+ * @param payment The payment data to create
+ * @returns The created payment
+ */
 const create = async (payment: CreatePaymentDto) => {
+  // Validate payment amount
+  if (payment.amount <= 0) {
+    throw new InvalidInputException('Payment amount must be greater than zero')
+  }
+
+  // Validate payment method
+  if (!payment.paymentMethod || payment.paymentMethod.trim() === '') {
+    throw new InvalidInputException('Payment method is required')
+  }
+
   const newPayment = await paymentRepository.create(payment)
   if (!newPayment) {
     throw new InvalidInputException('Failed to create payment')
@@ -11,7 +26,16 @@ const create = async (payment: CreatePaymentDto) => {
   return newPayment
 }
 
+/**
+ * Get a payment by ID
+ * @param id The payment ID
+ * @returns The payment
+ */
 const getById = async (id: PaymentId) => {
+  if (!id) {
+    throw new InvalidInputException('Payment ID is required')
+  }
+
   const payment = await paymentRepository.getById(id)
   if (!payment) {
     throw new NotFoundException('Payment not found')
@@ -19,7 +43,20 @@ const getById = async (id: PaymentId) => {
   return payment
 }
 
+/**
+ * Update a payment
+ * @param id The payment ID
+ * @param payment The payment data to update
+ * @returns The updated payment
+ */
 const update = async (id: PaymentId, payment: UpdatePaymentDto) => {
+  if (!id) {
+    throw new InvalidInputException('Payment ID is required')
+  }
+
+  // Check if payment exists
+  await getById(id)
+
   const updatedPayment = await paymentRepository.update(id, payment)
   if (!updatedPayment) {
     throw new NotFoundException('Payment not found')
@@ -27,7 +64,16 @@ const update = async (id: PaymentId, payment: UpdatePaymentDto) => {
   return updatedPayment
 }
 
+/**
+ * Get payments by curriculum ID
+ * @param curriculumId The curriculum ID
+ * @returns List of payments for the curriculum
+ */
 const getByCurriculumId = async (curriculumId: string) => {
+  if (!curriculumId) {
+    throw new InvalidInputException('Curriculum ID is required')
+  }
+
   const payments = await paymentRepository.getByCurriculumId(curriculumId)
   if (!payments.length) {
     throw new NotFoundException('No payments found for curriculum')
@@ -35,6 +81,11 @@ const getByCurriculumId = async (curriculumId: string) => {
   return payments
 }
 
+/**
+ * Get paginated payments
+ * @param params Pagination parameters
+ * @returns Paginated list of payments
+ */
 const getPaginated = async (params: PaginationParams) => {
   const validatedPage = params.page ?? 1
   const validatedLimit = params.limit ?? 10
