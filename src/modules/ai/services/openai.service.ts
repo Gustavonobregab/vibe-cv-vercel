@@ -37,6 +37,10 @@ Output Format:
  * @returns CV analysis response with improvements and suggestions
  */
 const analyzeCv = async (request: CvAnalysisRequest): Promise<CvAnalysisResponse> => {
+  if (!request.cvContent || request.cvContent.trim().length === 0) {
+    throw new InvalidInputException('CV content cannot be empty');
+  }
+
   const response = await openai.chat.completions.create({
     model: openaiConfig.model,
     messages: [
@@ -58,12 +62,30 @@ const analyzeCv = async (request: CvAnalysisRequest): Promise<CvAnalysisResponse
     throw new InvalidInputException('No response received from OpenAI');
   }
 
-  // Parse the content - any JSON parsing error will be caught by the global error handler
-  const responseData = JSON.parse(response.choices[0].message.content);
+  let responseData;
+
+  // Parse the content - JSON parsing errors are caught and handled explicitly here
+  try {
+    responseData = JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    // Create a basic fallback response with the original content
+    return {
+      improvedContent: request.cvContent,
+      suggestedChanges: [],
+      overallAssessment: 'Could not analyze CV due to API response parsing error.',
+      timestamp: new Date()
+    };
+  }
 
   // Validate that the required fields are present in the response
   if (!responseData.improvedContent || !Array.isArray(responseData.suggestedChanges) || !responseData.overallAssessment) {
-    throw new InvalidInputException('Incomplete analysis response from OpenAI');
+    // Create a response with available data and fallbacks for missing fields
+    return {
+      improvedContent: responseData.improvedContent || request.cvContent,
+      suggestedChanges: Array.isArray(responseData.suggestedChanges) ? responseData.suggestedChanges : [],
+      overallAssessment: responseData.overallAssessment || 'Analysis incomplete due to missing data in API response.',
+      timestamp: new Date()
+    };
   }
 
   return {
