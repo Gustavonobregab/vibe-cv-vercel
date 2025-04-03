@@ -36,8 +36,9 @@ src/
 - **Helmet** - Segurança HTTP
 - **Compression** - Compressão de respostas
 - **Dotenv** - Variáveis de ambiente
+- **Vercel Blob** - Armazenamento de arquivos
 
-## Fluxo de Autenticação e Criação de Usuário
+## Sistema de Autenticação via Google
 
 ### 1. Início do Fluxo
 
@@ -47,99 +48,168 @@ src/
 ### 2. Autenticação no Google
 
 - Usuário faz login no Google
-- Google retorna para `/auth/google/callback` com:
-  - Código de autorização
-  - Dados do perfil (id, email, nome, foto)
+- Google retorna para `/auth/google/callback` com dados do perfil (id, email, nome, foto)
 
 ### 3. Processamento do Callback
 
-O fluxo de criação/atualização de usuário acontece no callback do Passport:
+O sistema processa a autenticação no callback:
 
 ```typescript
-// 1. Passport recebe o perfil do Google
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
-      scope: ["email", "profile"],
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        // 2. Valida e cria/atualiza usuário
-        const user = await validateGoogleUser(profile as GoogleProfile);
-        done(null, user);
-      } catch (error) {
-        done(error as Error);
+const googleCallback = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate(
+    "google",
+    async (err: Error | null, user: PassportUser | null) => {
+      if (err) {
+        return next(err);
       }
+
+      if (!user) {
+        return res
+          .status(HttpStatus.UNAUTHORIZED)
+          .json({ message: "Authentication failed" });
+      }
+
+      const token = authService.generateJwtToken(user);
+      res.status(HttpStatus.OK).json({
+        accessToken: token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          picture: user.picture,
+        },
+      });
     }
-  )
-);
+  )(req, res, next);
+};
 ```
 
-### 4. Validação e Criação do Usuário
+### 4. Criação ou Atualização do Usuário
 
-O serviço de autenticação valida e cria o usuário:
+Quando um usuário faz login com Google pela primeira vez, o sistema:
+
+- Verifica se já existe um usuário com o mesmo ID do Google
+- Se não existir, cria um novo usuário com os dados do perfil do Google
+- Se existir, atualiza os dados do usuário com as informações mais recentes
+
+### 5. Geração e Uso do JWT
+
+- O sistema gera um token JWT contendo o ID e email do usuário
+- O token é enviado na resposta ao cliente
+- Para acessar rotas protegidas, o cliente deve incluir o token no header `Authorization: Bearer <token>`
+- O middleware `verifyToken` valida o token e anexa o usuário à requisição
+
+## Sistema de Upload de CV
+
+O sistema permite que usuários autenticados façam upload de seus currículos em formato PDF, que são armazenados de forma segura e vinculados ao perfil do usuário.
+
+### 1. Estrutura de Dados do CV
+
+Os currículos são armazenados no banco de dados com as seguintes informações:
 
 ```typescript
-const createUser = async (profile: GoogleProfile): Promise<User> => {
-  const { id, displayName, emails, photos } = profile;
-  const email = emails[0].value;
-  const picture = photos?.[0]?.value;
+export const curriculums = pgTable("curriculums", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  title: text("title").notNull(),
+  cvUrl: text("cv_url").notNull(),
+  status: curriculumStatusEnum("status").notNull().default("to_review"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+```
 
-  // Find or create user
-  const existingUser = await userService.getUserByGoogleId(id);
-  if (!existingUser) {
-    return await userService.createFromGoogle({
-      googleId: id,
-      email,
-      name: displayName,
-      picture,
-      isActive: true,
-    });
+Os possíveis estados de um currículo são:
+
+- `to_review` - Aguardando revisão
+- `reviewing` - Em processo de revisão
+- `reviewed` - Revisão concluída
+
+### 2. Upload de Arquivo
+
+O upload de CV utiliza o middleware Multer para processar arquivos PDF:
+
+```typescript
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF files are allowed"));
+    }
+  },
+});
+```
+
+A rota de upload recebe o arquivo PDF e o título do currículo:
+
+```typescript
+router.post("/upload", upload.single("cv"), curriculumController.uploadCV);
+```
+
+### 3. Armazenamento no Vercel Blob
+
+Os arquivos PDF são armazenados no Vercel Blob, um serviço de armazenamento seguro e escalável:
+
+```typescript
+const uploadCV = async (
+  userId: UserId,
+  title: string,
+  file: Express.Multer.File
+) => {
+  // Upload CV to Vercel Blob
+  const { url } = await put(
+    `curriculums/${userId}/${Date.now()}-${file.originalname}`,
+    file.buffer,
+    {
+      access: "public",
+      contentType: file.mimetype,
+    }
+  );
+
+  // Save curriculum with CV URL
+  const curriculum = await curriculumRepository.create({
+    userId,
+    title,
+    cvUrl: url,
+  });
+
+  if (!curriculum) {
+    throw new InvalidInputException("Failed to upload CV");
   }
 
-  return existingUser;
+  return curriculum;
 };
 ```
 
-### 5. Criação no Banco
+### 4. Segurança e Permissões
 
-O repositório cria o usuário no banco de dados:
+O sistema garante que apenas usuários autenticados possam fazer upload de CVs e que os usuários possam acessar apenas seus próprios currículos:
 
 ```typescript
-const create = async ({
-  googleId,
-  email,
-  name,
-  picture,
-  isActive,
-}: CreateFromGoogleDto): Promise<User> => {
-  const [user] = await db
-    .insert(users)
-    .values({
-      googleId,
-      email,
-      name,
-      picture,
-      isActive,
-    })
-    .returning();
-  return user;
-};
+// Ensure user can only access their own curriculums
+if (curriculum.userId !== req.user?.id) {
+  throw new InsufficientPermissionsException("access this curriculum");
+}
 ```
 
-### 6. Geração do Token
+### 5. Fluxo Completo de Upload
 
-- Sistema gera JWT com ID e email do usuário
-- Token é enviado na resposta
-
-### 7. Uso do Token
-
-- Cliente armazena token
-- Envia token no header `Authorization: Bearer <token>`
-- Middleware `verifyToken` valida token e anexa usuário à requisição
+1. O usuário autentica-se no sistema
+2. Envia uma requisição POST para `/curriculums/upload` com:
+   - O arquivo PDF no campo `cv`
+   - O título do currículo no campo `title`
+   - O token JWT no header `Authorization`
+3. O sistema valida a autenticação e o arquivo
+4. O PDF é enviado para o Vercel Blob
+5. Os metadados do currículo (incluindo a URL do arquivo) são salvos no banco de dados
+6. O sistema retorna os dados do currículo criado
 
 ## Endpoints
 
@@ -155,11 +225,18 @@ const create = async ({
 - `GET /users/google/:googleId` - Busca usuário por Google ID
 - `GET /users/email/:email` - Busca usuário por email
 - `PUT /users/:id` - Atualiza dados do usuário
-- `PATCH /users/:id/complete-profile` - Completa perfil do usuário
-- `POST /users/:id/cv` - Faz upload do CV
+- `PATCH /users/:id/profile` - Completa perfil do usuário
 - `GET /users` - Lista usuários (paginação)
 
-> Nota: Não existe endpoint de criação de usuário público. Usuários são criados automaticamente no primeiro login com Google.
+### Curriculums
+
+- `POST /curriculums/upload` - Faz upload de CV (PDF)
+- `GET /curriculums/:id` - Obtém currículo por ID
+- `PUT /curriculums/:id` - Atualiza currículo
+- `GET /curriculums/user/:userId` - Lista currículos do usuário
+- `GET /curriculums` - Lista currículos (paginação)
+
+> Nota: Todas as rotas de currículos são protegidas e exigem autenticação. Os usuários só podem acessar seus próprios currículos.
 
 ## Configuração e Execução
 
@@ -191,6 +268,7 @@ const create = async ({
    GOOGLE_CLIENT_ID=seu-client-id
    GOOGLE_CLIENT_SECRET=seu-client-secret
    GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+   BLOB_READ_WRITE_TOKEN=seu-token-vercel-blob
    ```
 
 4. **Execução**
