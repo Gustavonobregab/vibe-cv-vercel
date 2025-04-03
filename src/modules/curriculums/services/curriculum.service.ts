@@ -4,7 +4,8 @@ import type { UpdateCurriculumDto, CurriculumId } from '../types/curriculum.type
 import type { UserId } from '../../users/types/user.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 import { put } from '@vercel/blob'
-import { analyzePdfCv, CvAnalysisResponse } from '../../ai'
+import { openaiService } from '../../ai'
+import type { CvAnalysisResponse } from '../../ai/types/ai.types'
 
 const getById = async (id: CurriculumId) => {
   const curriculum = await curriculumRepository.getById(id)
@@ -91,7 +92,7 @@ const analyzeCV = async (id: CurriculumId) => {
   const cvBuffer = Buffer.from(await cvResponse.arrayBuffer())
 
   // Analyze the CV using the AI module
-  const analysisResult = await analyzePdfCv(cvBuffer, `${curriculum.title}.pdf`)
+  const analysisResult = await openaiService.analyzePdfCv(cvBuffer, `${curriculum.title}.pdf`)
 
   // Update the curriculum with the analysis results
   const updatedCurriculum = await curriculumRepository.update(id, {

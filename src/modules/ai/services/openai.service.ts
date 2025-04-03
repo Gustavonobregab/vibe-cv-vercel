@@ -1,6 +1,6 @@
 import { openai, openaiConfig } from '../config/openai.config'
 import { CvAnalysisRequest, CvAnalysisResponse } from '../types/ai.types'
-import { convertPdfToText } from './pdf.service'
+import pdfService from './pdf.service'
 import { InvalidInputException } from '../../../shared/errors/http-exception'
 
 /**
@@ -36,7 +36,7 @@ Output Format:
  * @param request - The CV analysis request containing the CV content
  * @returns CV analysis response with improvements and suggestions
  */
-export const analyzeCv = async (request: CvAnalysisRequest): Promise<CvAnalysisResponse> => {
+const analyzeCv = async (request: CvAnalysisRequest): Promise<CvAnalysisResponse> => {
   const response = await openai.chat.completions.create({
     model: openaiConfig.model,
     messages: [
@@ -74,9 +74,9 @@ export const analyzeCv = async (request: CvAnalysisRequest): Promise<CvAnalysisR
  * @param filename - Optional filename of the PDF
  * @returns CV analysis response with improvements and suggestions
  */
-export const analyzePdfCv = async (pdfBuffer: Buffer, filename?: string): Promise<CvAnalysisResponse> => {
+const analyzePdfCv = async (pdfBuffer: Buffer, filename?: string): Promise<CvAnalysisResponse> => {
   // Extract text from the PDF
-  const cvContent = await convertPdfToText({
+  const cvContent = await pdfService.convertPdfToText({
     pdfData: pdfBuffer,
     isPath: false
   });
@@ -86,4 +86,9 @@ export const analyzePdfCv = async (pdfBuffer: Buffer, filename?: string): Promis
     cvContent,
     filename
   });
-}; 
+};
+
+export default {
+  analyzeCv,
+  analyzePdfCv
+} 

@@ -8,7 +8,7 @@ import { InvalidInputException } from '../../../shared/errors/http-exception'
  * @param request The PDF to text conversion request
  * @returns Extracted text from the PDF
  */
-export const convertPdfToText = async (request: PdfToTextRequest): Promise<string> => {
+const convertPdfToText = async (request: PdfToTextRequest): Promise<string> => {
   let dataBuffer: Buffer;
 
   if (request.isPath && typeof request.pdfData === 'string') {
@@ -35,4 +35,8 @@ const processBuffer = async (buffer: Buffer): Promise<string> => {
   }
 
   return data.text;
+}
+
+export default {
+  convertPdfToText
 } 
