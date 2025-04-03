@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
-import { verify, JwtPayload } from 'jsonwebtoken'
+import { verify } from 'jsonwebtoken'
 import { InvalidCredentialsException } from '../../../shared/errors/http-exception'
-import { User } from '../../users/types/user.types'
+import { config } from '../../../shared/config'
+import { JwtPayload } from '../types/auth.types'
+import authService from '../services/auth.service'
 
-export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1]
 
   if (!token) {
@@ -11,8 +13,14 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
   }
 
   try {
-    const decoded = verify(token, process.env.JWT_SECRET || 'your-secret-key') as User
-    req.user = decoded
+    const payload = verify(token, config.jwt.secret) as JwtPayload
+    const user = await authService.getUserById(payload.sub)
+
+    if (!user) {
+      throw new InvalidCredentialsException('User not found')
+    }
+
+    req.user = user
     next()
   } catch (error) {
     throw new InvalidCredentialsException('Invalid token')

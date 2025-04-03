@@ -31,32 +31,26 @@ const googleCallback = (req: Request, res: Response, next: NextFunction) => {
   })(req, res, next)
 }
 
-const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization
-  if (!authHeader) {
-    return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'No token provided' })
-  }
+/**
+ * Gets the current user information
+ */
+const getCurrentUser = (req: Request, res: Response) => {
+  // User is already attached to req by verifyToken middleware
+  const user = req.user as PassportUser
 
-  const token = authHeader.split(' ')[1]
-  if (!token) {
-    return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid token format' })
-  }
-
-  try {
-    const payload = authService.verifyToken(token)
-    const user = await authService.getUserById(payload.sub)
-    if (!user) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'User not found' })
+  res.status(HttpStatus.OK).json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+      isActive: user.isActive
     }
-    req.user = user
-    next()
-  } catch (error) {
-    return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid token' })
-  }
+  })
 }
 
 export default {
   googleAuth,
   googleCallback,
-  verifyToken
+  getCurrentUser
 } 

@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import authController from '../controllers/auth.controller'
+import { verifyToken } from '../middlewares/auth.middleware'
 
 const router = Router()
 
@@ -7,7 +8,7 @@ const router = Router()
 router.get('/google', authController.googleAuth)
 router.get('/google/callback', authController.googleCallback)
 
-// Token verification middleware
-router.use('/verify', authController.verifyToken)
+// Protected routes
+router.get('/me', verifyToken, authController.getCurrentUser)
 
 export default router 
