@@ -16,6 +16,7 @@ export const updateCurriculumSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   cvUrl: z.string().url().optional(),
   status: curriculumStatusEnum.optional(),
+  iaAnalysis: z.any().optional(), // Using z.any() for flexibility with the complex AI response structure
 })
 
 // Get curriculum by ID request schema
@@ -39,6 +40,7 @@ export const curriculumResponseSchema = z.object({
   userId: idSchema,
   title: z.string(),
   cvUrl: z.string().url(),
+  iaAnalysis: z.any().nullable(),
   status: curriculumStatusEnum,
 }).merge(dateFieldsSchema)
 

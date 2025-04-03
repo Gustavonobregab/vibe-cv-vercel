@@ -68,11 +68,11 @@ const uploadCV = async (userId: UserId, title: string, file: Express.Multer.File
 }
 
 /**
- * Analyzes a CV using the AI module and returns improvement suggestions
+ * Analyzes a CV using the AI module and saves the analysis results
  * @param id The curriculum ID to analyze
- * @returns Analysis results with improvement suggestions
+ * @returns Updated curriculum with analysis results
  */
-const analyzeCV = async (id: CurriculumId): Promise<CvAnalysisResponse> => {
+const analyzeCV = async (id: CurriculumId) => {
   // Get the curriculum from the database
   const curriculum = await getById(id)
 
@@ -91,7 +91,18 @@ const analyzeCV = async (id: CurriculumId): Promise<CvAnalysisResponse> => {
   const cvBuffer = Buffer.from(await cvResponse.arrayBuffer())
 
   // Analyze the CV using the AI module
-  return await analyzePdfCv(cvBuffer, `${curriculum.title}.pdf`)
+  const analysisResult = await analyzePdfCv(cvBuffer, `${curriculum.title}.pdf`)
+
+  // Update the curriculum with the analysis results
+  const updatedCurriculum = await curriculumRepository.update(id, {
+    iaAnalysis: analysisResult
+  })
+
+  if (!updatedCurriculum) {
+    throw new InvalidInputException('Failed to update curriculum with analysis results')
+  }
+
+  return updatedCurriculum
 }
 
 export default {
