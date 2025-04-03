@@ -6,6 +6,7 @@ import type { PaginationParams } from '../../../shared/types/common.types'
 import { put } from '@vercel/blob'
 import { openaiService } from '../../ai'
 import type { CvAnalysisResponse } from '../../ai/types/ai.types'
+import { httpUtils } from '../../../shared/http/http-client'
 
 const getById = async (id: CurriculumId) => {
   const curriculum = await curriculumRepository.getById(id)
@@ -80,16 +81,8 @@ const analyzeCV = async (id: CurriculumId) => {
   if (!curriculum.cvUrl) {
     throw new InvalidInputException('Curriculum does not have a CV file')
   }
-
-  // Fetch the CV file from the URL
-  const cvResponse = await fetch(curriculum.cvUrl)
-
-  if (!cvResponse.ok) {
-    throw new InvalidInputException('Failed to fetch CV file')
-  }
-
-  // Convert the response to a buffer
-  const cvBuffer = Buffer.from(await cvResponse.arrayBuffer())
+  // Download the CV file using our HTTP client
+  const cvBuffer = await httpUtils.downloadFile(curriculum.cvUrl)
 
   // Analyze the CV using the AI module
   const analysisResult = await openaiService.analyzePdfCv(cvBuffer, `${curriculum.title}.pdf`)
@@ -104,6 +97,9 @@ const analyzeCV = async (id: CurriculumId) => {
   }
 
   return updatedCurriculum
+
+  throw new InvalidInputException('Failed to fetch CV file')
+
 }
 
 export default {
