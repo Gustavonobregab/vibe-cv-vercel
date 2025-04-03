@@ -22,10 +22,18 @@ const upload = multer({
 router.use(verifyToken)
 
 // Curriculum routes - all protected
+// List all curriculums (paginated)
+router.get('/', curriculumController.getCurriculumsPaginated)
+
+// Upload new CV
+router.post('/upload', upload.single('cv'), curriculumController.uploadCV)
+
+// User-specific curriculums
+router.get('/user/:userId', curriculumController.getCurriculumsByUserId)
+
+// Individual curriculum operations
 router.get('/:id', curriculumController.getCurriculumById)
 router.put('/:id', curriculumController.updateCurriculum)
-router.get('/user/:userId', curriculumController.getCurriculumsByUserId)
-router.get('/', curriculumController.getCurriculumsPaginated)
-router.post('/upload', upload.single('cv'), curriculumController.uploadCV)
+router.post('/:id/analyze', curriculumController.analyzeCV)
 
 export default router 

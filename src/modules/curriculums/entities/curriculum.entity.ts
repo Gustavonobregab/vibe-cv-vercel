@@ -12,7 +12,7 @@ export const curriculums = pgTable('curriculums', {
   userId: uuid('user_id').notNull().references(() => users.id),
   title: text('title').notNull(),
   cvUrl: text('cv_url').notNull(),
-  iaAnalysis: jsonb('ia_analysis'),
+  aiAnalysis: jsonb('ai_analysis'),
   status: curriculumStatusEnum('status').notNull().default('to_review'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

@@ -8,6 +8,10 @@ import { openaiService } from '../../ai'
 import type { CvAnalysisResponse } from '../../ai/types/ai.types'
 import { httpUtils } from '../../../shared/http/http-client'
 
+/**
+ * Get a curriculum by ID
+ * @param id The curriculum ID
+ */
 const getById = async (id: CurriculumId) => {
   const curriculum = await curriculumRepository.getById(id)
   if (!curriculum) {
@@ -16,6 +20,11 @@ const getById = async (id: CurriculumId) => {
   return curriculum
 }
 
+/**
+ * Update a curriculum
+ * @param id The curriculum ID to update
+ * @param curriculum The curriculum data to update
+ */
 const update = async (id: CurriculumId, curriculum: UpdateCurriculumDto) => {
   const updatedCurriculum = await curriculumRepository.update(id, curriculum)
   if (!updatedCurriculum) {
@@ -24,6 +33,10 @@ const update = async (id: CurriculumId, curriculum: UpdateCurriculumDto) => {
   return updatedCurriculum
 }
 
+/**
+ * Get curriculums by user ID
+ * @param userId The user ID
+ */
 const getByUserId = async (userId: UserId) => {
   const curriculums = await curriculumRepository.getByUserId(userId)
   if (!curriculums.length) {
@@ -32,6 +45,10 @@ const getByUserId = async (userId: UserId) => {
   return curriculums
 }
 
+/**
+ * Get paginated curriculums
+ * @param params Pagination parameters
+ */
 const getPaginated = async (params: PaginationParams) => {
   const validatedPage = params.page ?? 1
   const validatedLimit = params.limit ?? 10
@@ -48,7 +65,22 @@ const getPaginated = async (params: PaginationParams) => {
   return paginatedCurriculums
 }
 
+/**
+ * Upload a CV file
+ * @param userId The user ID
+ * @param title The curriculum title
+ * @param file The uploaded file
+ */
 const uploadCV = async (userId: UserId, title: string, file: Express.Multer.File) => {
+  // Validate input
+  if (!title || !title.trim()) {
+    throw new InvalidInputException('Title is required')
+  }
+
+  if (!file || !file.buffer) {
+    throw new InvalidInputException('CV file is required')
+  }
+
   // Upload CV to Vercel Blob
   const { url } = await put(`curriculums/${userId}/${Date.now()}-${file.originalname}`, file.buffer, {
     access: 'public',
@@ -90,7 +122,7 @@ const analyzeCV = async (id: CurriculumId) => {
 
   // Update the curriculum with the analysis results
   const updatedCurriculum = await curriculumRepository.update(id, {
-    iaAnalysis: analysisResult
+    aiAnalysis: analysisResult
   })
 
   if (!updatedCurriculum) {

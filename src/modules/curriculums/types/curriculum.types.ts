@@ -8,13 +8,13 @@ export type Curriculum = {
   userId: string
   title: string
   cvUrl: string
-  iaAnalysis?: CvAnalysisResponse | null
+  aiAnalysis?: CvAnalysisResponse | null
   status: CurriculumStatus
   createdAt: Date
   updatedAt: Date
 }
 
-export type NewCurriculum = Omit<Curriculum, 'id' | 'createdAt' | 'updatedAt' | 'iaAnalysis'>
+export type NewCurriculum = Omit<Curriculum, 'id' | 'createdAt' | 'updatedAt' | 'aiAnalysis'>
 export type CurriculumId = string
 
 export type CurriculumStatus = typeof curriculumStatusEnum.enumValues[number]
