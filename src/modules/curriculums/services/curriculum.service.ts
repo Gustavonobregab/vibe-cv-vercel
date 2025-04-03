@@ -4,6 +4,7 @@ import type { UpdateCurriculumDto, CurriculumId } from '../types/curriculum.type
 import type { UserId } from '../../users/types/user.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
 import { put } from '@vercel/blob'
+import { analyzePdfCv, CvAnalysisResponse } from '../../ai'
 
 const getById = async (id: CurriculumId) => {
   const curriculum = await curriculumRepository.getById(id)
@@ -66,10 +67,38 @@ const uploadCV = async (userId: UserId, title: string, file: Express.Multer.File
   return curriculum
 }
 
+/**
+ * Analyzes a CV using the AI module and returns improvement suggestions
+ * @param id The curriculum ID to analyze
+ * @returns Analysis results with improvement suggestions
+ */
+const analyzeCV = async (id: CurriculumId): Promise<CvAnalysisResponse> => {
+  // Get the curriculum from the database
+  const curriculum = await getById(id)
+
+  if (!curriculum.cvUrl) {
+    throw new InvalidInputException('Curriculum does not have a CV file')
+  }
+
+  // Fetch the CV file from the URL
+  const cvResponse = await fetch(curriculum.cvUrl)
+
+  if (!cvResponse.ok) {
+    throw new InvalidInputException('Failed to fetch CV file')
+  }
+
+  // Convert the response to a buffer
+  const cvBuffer = Buffer.from(await cvResponse.arrayBuffer())
+
+  // Analyze the CV using the AI module
+  return await analyzePdfCv(cvBuffer, `${curriculum.title}.pdf`)
+}
+
 export default {
   getById,
   update,
   getByUserId,
   getPaginated,
-  uploadCV
+  uploadCV,
+  analyzeCV
 } 
