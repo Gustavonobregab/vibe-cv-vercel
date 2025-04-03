@@ -81,6 +81,7 @@ const analyzeCV = async (id: CurriculumId) => {
   if (!curriculum.cvUrl) {
     throw new InvalidInputException('Curriculum does not have a CV file')
   }
+
   // Download the CV file using our HTTP client
   const cvBuffer = await httpUtils.downloadFile(curriculum.cvUrl)
 
@@ -97,9 +98,6 @@ const analyzeCV = async (id: CurriculumId) => {
   }
 
   return updatedCurriculum
-
-  throw new InvalidInputException('Failed to fetch CV file')
-
 }
 
 export default {

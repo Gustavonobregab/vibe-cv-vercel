@@ -58,12 +58,18 @@ const analyzeCv = async (request: CvAnalysisRequest): Promise<CvAnalysisResponse
     throw new InvalidInputException('No response received from OpenAI');
   }
 
+  // Parse the content - any JSON parsing error will be caught by the global error handler
   const responseData = JSON.parse(response.choices[0].message.content);
 
+  // Validate that the required fields are present in the response
+  if (!responseData.improvedContent || !Array.isArray(responseData.suggestedChanges) || !responseData.overallAssessment) {
+    throw new InvalidInputException('Incomplete analysis response from OpenAI');
+  }
+
   return {
-    improvedContent: responseData.improvedContent || request.cvContent,
-    suggestedChanges: responseData.suggestedChanges || [],
-    overallAssessment: responseData.overallAssessment || 'No assessment provided',
+    improvedContent: responseData.improvedContent,
+    suggestedChanges: responseData.suggestedChanges,
+    overallAssessment: responseData.overallAssessment,
     timestamp: new Date()
   };
 };
@@ -80,6 +86,10 @@ const analyzePdfCv = async (pdfBuffer: Buffer, filename?: string): Promise<CvAna
     pdfData: pdfBuffer,
     isPath: false
   });
+
+  if (!cvContent || cvContent.trim().length === 0) {
+    throw new InvalidInputException('Could not extract text from PDF or PDF is empty');
+  }
 
   // Analyze the extracted text
   return await analyzeCv({
