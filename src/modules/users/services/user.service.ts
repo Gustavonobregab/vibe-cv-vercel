@@ -1,8 +1,17 @@
-import userRepository from '../repositories/user.repository'
-import { NotFoundException, InvalidInputException, DuplicateResourceException } from '../../../shared/errors/http-exception'
-import type { CreateFromGoogleDto, UpdateUserDto, UpdateGoogleProfileDto, UserId } from '../types/user.types'
-import type { PaginationParams } from '../../../shared/types/common.types'
-import { put } from '@vercel/blob'
+import userRepository from "../repositories/user.repository";
+import {
+  NotFoundException,
+  InvalidInputException,
+  DuplicateResourceException,
+  InsufficientPermissionsException,
+} from "../../../shared/errors/http-exception";
+import type {
+  CreateFromGoogleDto,
+  UpdateUserDto,
+  UpdateGoogleProfileDto,
+  UserId,
+} from "../types/user.types";
+import type { PaginationParams } from "../../../shared/types/common.types";
 
 /**
  * Create a new user from Google OAuth data
@@ -12,17 +21,19 @@ import { put } from '@vercel/blob'
 const createFromGoogle = async (user: CreateFromGoogleDto) => {
   // Validate input
   if (!user.googleId || !user.email || !user.name) {
-    throw new InvalidInputException('Missing required user data')
+    throw new InvalidInputException("Missing required user data");
   }
 
   // Check if user with this Google ID already exists
-  const existingByGoogleId = await userRepository.getByGoogleId(user.googleId)
+  const existingByGoogleId = await userRepository.getByGoogleId(user.googleId);
   if (existingByGoogleId) {
-    throw new DuplicateResourceException('User with this Google ID already exists')
+    throw new DuplicateResourceException(
+      "User with this Google ID already exists"
+    );
   }
 
   // Check if user with this email already exists but doesn't have a Google ID
-  const existingByEmail = await userRepository.getByEmail(user.email)
+  const existingByEmail = await userRepository.getByEmail(user.email);
   if (existingByEmail) {
     if (!existingByEmail.googleId) {
       // Update existing user with Google ID
@@ -30,19 +41,19 @@ const createFromGoogle = async (user: CreateFromGoogleDto) => {
         googleId: user.googleId,
         name: user.name,
         picture: user.picture,
-        isActive: user.isActive
-      })
+        isActive: user.isActive,
+      });
     }
-    throw new DuplicateResourceException('User with this email already exists')
+    throw new DuplicateResourceException("User with this email already exists");
   }
 
   // Create new user
-  const newUser = await userRepository.create(user)
+  const newUser = await userRepository.create(user);
   if (!newUser) {
-    throw new InvalidInputException('Failed to create user')
+    throw new InvalidInputException("Failed to create user");
   }
-  return newUser
-}
+  return newUser;
+};
 
 /**
  * Update a user's Google profile data
@@ -50,21 +61,23 @@ const createFromGoogle = async (user: CreateFromGoogleDto) => {
  * @param user Updated Google profile data
  * @returns The updated user
  */
-const updateGoogleProfile = async (id: UserId, user: UpdateGoogleProfileDto) => {
+const updateGoogleProfile = async (
+  id: UserId,
+  userId: UserId,
+  user: UpdateGoogleProfileDto
+) => {
   if (!id) {
-    throw new InvalidInputException('User ID is required')
+    throw new InvalidInputException("User ID is required");
   }
 
   // Validate that user exists
-  await getById(id)
+  await getById(id, userId);
 
   // Update user
-  const updatedUser = await userRepository.update(id, user)
-  if (!updatedUser) {
-    throw new NotFoundException('User not found')
-  }
-  return updatedUser
-}
+  const updatedUser = update(id, userId, user);
+
+  return updatedUser;
+};
 
 /**
  * Complete a user's profile with additional information
@@ -72,41 +85,44 @@ const updateGoogleProfile = async (id: UserId, user: UpdateGoogleProfileDto) => 
  * @param user Profile data to update
  * @returns The updated user
  */
-const completeProfile = async (id: UserId, user: UpdateUserDto) => {
+const completeProfile = async (
+  id: UserId,
+  userId: UserId,
+  user: UpdateUserDto
+) => {
   if (!id) {
-    throw new InvalidInputException('User ID is required')
+    throw new InvalidInputException("User ID is required");
   }
 
   // Validate that user exists
-  const existingUser = await userRepository.getById(id)
-  if (!existingUser) {
-    throw new NotFoundException('User not found')
-  }
+  getById(id, userId);
 
   // Update user profile
-  const updatedUser = await userRepository.update(id, user)
-  if (!updatedUser) {
-    throw new InvalidInputException('Failed to update profile')
-  }
-  return updatedUser
-}
+  const updatedUser = await update(id, userId, user);
+
+  return updatedUser;
+};
 
 /**
  * Get a user by ID
  * @param id User ID
  * @returns The user
  */
-const getById = async (id: UserId) => {
+const getById = async (id: UserId, userId: UserId) => {
   if (!id) {
-    throw new InvalidInputException('User ID is required')
+    throw new InvalidInputException("User ID is required");
   }
 
-  const user = await userRepository.getById(id)
-  if (!user) {
-    throw new NotFoundException('User not found')
+  if (id !== userId) {
+    throw new InsufficientPermissionsException("access this user profile");
   }
-  return user
-}
+
+  const user = await userRepository.getById(id);
+  if (!user) {
+    throw new NotFoundException("User not found");
+  }
+  return user;
+};
 
 /**
  * Get a user by Google ID
@@ -115,15 +131,15 @@ const getById = async (id: UserId) => {
  */
 const getUserByGoogleId = async (googleId: string) => {
   if (!googleId) {
-    throw new InvalidInputException('Google ID is required')
+    throw new InvalidInputException("Google ID is required");
   }
 
-  const user = await userRepository.getByGoogleId(googleId)
+  const user = await userRepository.getByGoogleId(googleId);
   if (!user) {
-    throw new NotFoundException('User not found')
+    throw new NotFoundException("User not found");
   }
-  return user
-}
+  return user;
+};
 
 /**
  * Get a user by email
@@ -132,15 +148,15 @@ const getUserByGoogleId = async (googleId: string) => {
  */
 const getUserByEmail = async (email: string) => {
   if (!email) {
-    throw new InvalidInputException('Email is required')
+    throw new InvalidInputException("Email is required");
   }
 
-  const user = await userRepository.getByEmail(email)
+  const user = await userRepository.getByEmail(email);
   if (!user) {
-    throw new NotFoundException('User not found')
+    throw new NotFoundException("User not found");
   }
-  return user
-}
+  return user;
+};
 
 /**
  * Update a user's information
@@ -148,20 +164,20 @@ const getUserByEmail = async (email: string) => {
  * @param user User data to update
  * @returns The updated user
  */
-const update = async (id: UserId, user: UpdateUserDto) => {
+const update = async (id: UserId, userId: UserId, user: UpdateUserDto) => {
   if (!id) {
-    throw new InvalidInputException('User ID is required')
+    throw new InvalidInputException("User ID is required");
   }
 
   // Validate that user exists
-  await getById(id)
+  await getById(id, userId);
 
-  const updatedUser = await userRepository.update(id, user)
+  const updatedUser = await userRepository.update(id, user);
   if (!updatedUser) {
-    throw new NotFoundException('User not found')
+    throw new NotFoundException("User not found");
   }
-  return updatedUser
-}
+  return updatedUser;
+};
 
 /**
  * Get a paginated list of users
@@ -170,24 +186,24 @@ const update = async (id: UserId, user: UpdateUserDto) => {
  */
 const getPaginated = async (params: PaginationParams) => {
   // Validate pagination parameters
-  const validatedPage = params.page ?? 1
-  const validatedLimit = params.limit ?? 10
+  const validatedPage = params.page ?? 1;
+  const validatedLimit = params.limit ?? 10;
 
   if (validatedPage < 1 || validatedLimit < 1) {
-    throw new InvalidInputException('Invalid pagination parameters')
+    throw new InvalidInputException("Invalid pagination parameters");
   }
 
   const users = await userRepository.getPaginated({
     page: validatedPage,
-    limit: validatedLimit
-  })
+    limit: validatedLimit,
+  });
 
-  if (!users || users.length === 0) {
-    throw new NotFoundException('No users found')
+  if (!users || users.items.length === 0) {
+    throw new NotFoundException("No users found");
   }
 
-  return users
-}
+  return users;
+};
 
 export default {
   createFromGoogle,
@@ -197,5 +213,5 @@ export default {
   getUserByGoogleId,
   getUserByEmail,
   update,
-  getPaginated
-} 
+  getPaginated,
+};
