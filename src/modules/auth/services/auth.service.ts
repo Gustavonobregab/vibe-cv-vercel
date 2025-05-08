@@ -97,6 +97,7 @@ const generateJwtToken = (user: PassportUser): string => {
 
   const payload: JwtPayload = {
     sub: user.id,
+    role: user.role,
     email: user.email,
   };
 
