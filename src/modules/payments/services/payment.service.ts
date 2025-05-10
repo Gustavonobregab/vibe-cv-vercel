@@ -2,6 +2,10 @@ import paymentRepository from '../repositories/payment.repository'
 import { NotFoundException, InvalidInputException } from '../../../shared/errors/http-exception'
 import type { CreatePaymentDto, UpdatePaymentDto, PaymentId } from '../types/payment.types'
 import type { PaginationParams } from '../../../shared/types/common.types'
+import AbacatePay from 'abacatepay-nodejs-sdk'
+import { config } from '../../../shared/config'
+
+const abacate = AbacatePay(config.abacatePay.key || '');
 
 /**
  * Create a new payment
