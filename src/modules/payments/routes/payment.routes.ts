@@ -1,22 +1,26 @@
-import { Router } from 'express'
-import paymentController from '../controllers/payment.controller'
-import { verifyToken } from '../../auth/middlewares/auth.middleware'
+import { Router } from "express";
+import paymentController from "../controllers/payment.controller";
+import { verifyToken } from "../../auth/middlewares/auth.middleware";
+import { verifyRole } from "@/modules/auth/middlewares/roleGuard.middleware";
 
-const router = Router()
+const router = Router();
 
 // Apply authentication middleware to all routes
-router.use(verifyToken)
+router.use(verifyToken);
 
 // Payments routes - all protected
 // List all payments (paginated)
-router.get('/', paymentController.getPaymentsPaginated)
+router.get("/", verifyRole, paymentController.getPaymentsPaginated);
 
 // Payments for specific curriculum
-router.get('/curriculum/:curriculumId', paymentController.getPaymentsByCurriculumId)
+router.get(
+  "/curriculum/:curriculumId",
+  paymentController.getPaymentsByCurriculumId
+);
 
 // Individual payment operations
-router.post('/', paymentController.createPayment)
-router.get('/:id', paymentController.getPaymentById)
-router.put('/:id', paymentController.updatePayment)
+router.post("/", paymentController.createPayment);
+router.get("/:id", paymentController.getPaymentById);
+router.put("/:id", paymentController.updatePayment);
 
-export default router 
+export default router;
