@@ -4,7 +4,7 @@ import type { CreatePaymentDto, UpdatePaymentDto, PaymentId } from '../types/pay
 import type { PaginationParams } from '../../../shared/types/common.types'
 import AbacatePay from 'abacatepay-nodejs-sdk'
 import { config } from '../../../shared/config'
-import { PaymentStrategyFactory } from '@/modules/payment-providers/services/payment-strategy'
+import PaymentStrategyFactory from '../../payment-providers/services/payment-strategy'
 
 const abacate = AbacatePay(config.abacatePay.key || '');
 
