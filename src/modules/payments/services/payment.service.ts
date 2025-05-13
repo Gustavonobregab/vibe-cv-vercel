@@ -4,6 +4,7 @@ import type { CreatePaymentDto, UpdatePaymentDto, PaymentId } from '../types/pay
 import type { PaginationParams } from '../../../shared/types/common.types'
 import AbacatePay from 'abacatepay-nodejs-sdk'
 import { config } from '../../../shared/config'
+import { PaymentStrategyFactory } from '@/modules/payment-providers/services/payment-strategy'
 
 const abacate = AbacatePay(config.abacatePay.key || '');
 
@@ -23,6 +24,13 @@ const create = async (payment: CreatePaymentDto) => {
     throw new InvalidInputException('Payment method is required')
   }
 
+  //Use strategy to process with the right provider (before saving)
+   const strategy = PaymentStrategyFactory.getStrategy(payment)
+   
+  //Calling the strategy to create the payment
+   await strategy.createPayment(payment)
+
+  //Save the payment in the database
   const newPayment = await paymentRepository.create(payment)
   if (!newPayment) {
     throw new InvalidInputException('Failed to create payment')
