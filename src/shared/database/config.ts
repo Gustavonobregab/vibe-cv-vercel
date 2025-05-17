@@ -1,8 +1,11 @@
-import { drizzle } from 'drizzle-orm/vercel-postgres'
-import { sql } from '@vercel/postgres'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
+import { config } from '@/shared/config'
 
-// Create a single instance of the database connection
-export const db = drizzle(sql)
+const pool = new Pool({
+  connectionString: config.database.url,
+  ssl: { rejectUnauthorized: false },
+})
 
-// For migrations
-export const migrationClient = drizzle(sql) 
+export const db = drizzle(pool)
+export const migrationClient = db

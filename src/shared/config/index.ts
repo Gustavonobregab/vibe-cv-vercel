@@ -20,6 +20,11 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d'
   },
   abacatePay: {
-    key: process.env.ABACATEPAY_KEY
+    key: process.env.ABACATEPAY_API_KEY!
+  },
+  supabase: {
+    url: process.env.SUPABASE_URL!,
+    anonKey: process.env.SUPABASE_ANON_KEY!,
+    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   }
 } 

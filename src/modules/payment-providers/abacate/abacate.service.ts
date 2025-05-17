@@ -9,7 +9,7 @@ import {
   CreatePixQrCodeResponse
 } from 'abacatepay-nodejs-sdk/dist/types';
 
-const abacate = AbacatePay(process.env.ABACATEPAY_API_KEY!);
+ const abacate = AbacatePay(process.env.ABACATEPAY_API_KEY!);
 
 export default class AbacatePaymentService implements AbacatePaymentStrategy {
 
